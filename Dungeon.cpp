@@ -6,7 +6,6 @@ Dungeon::Dungeon() {
     floorTile.setFillColor(sf::Color(50, 50, 50));
     wallTile.setSize({ TILE_SIZE, TILE_SIZE });
     wallTile.setFillColor(sf::Color(100, 100, 100));
-    generate();
 }
 
 bool Dungeon::roomOverlaps(const Room& a, const Room& b) {
@@ -89,10 +88,10 @@ sf::Vector2f Dungeon::findSpawnPoint() const {
             }
         }
     }
-    if (!floorTiles.empty()) {
-        std::mt19937 gen{ std::random_device{}() };
-        std::uniform_int_distribution<size_t> dist(0, floorTiles.size() - 1);
-        return floorTiles[dist(gen)];
-    }
-    return { TILE_SIZE, TILE_SIZE };
+    if (floorTiles.empty()) return { TILE_SIZE, TILE_SIZE }; // fallback
+
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::uniform_int_distribution<std::size_t> dist(0, floorTiles.size() - 1);
+    return floorTiles[dist(gen)];
 }

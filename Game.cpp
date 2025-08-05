@@ -7,6 +7,11 @@ Game::Game()
     ui(dungeon)
 {
     window.setFramerateLimit(60);
+
+    dungeon.generate();
+    ui.regenerateMinimap();
+    player.setPosition(dungeon.findSpawnPoint());
+
     camera.setSize(sf::Vector2f{
         static_cast<float>(window.getSize().x),
         static_cast<float>(window.getSize().y) });
@@ -28,12 +33,18 @@ void Game::processEvents() {
     }
     // --- RESTART/EXIT ---
     if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::R)) {
+        dungeon.generate();
+        player.setPosition(dungeon.findSpawnPoint());
+        player.speed = 2.5f;
+        ui.regenerateMinimap();
         render();
     }
     if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Escape))
         window.close();
     if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Q)) camera.zoom(0.9f); // zoom in slowly
     if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::E)) camera.zoom(1.1f); // zoom out slowly
+    if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Y)) player.speed += 2.f; 
+    if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::X)) player.speed = std::max(1.0f, player.speed - 2.f);
 
 }
 

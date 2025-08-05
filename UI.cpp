@@ -2,30 +2,13 @@
 #include "Dungeon.hpp"
 
 UI::UI(const Dungeon& dungeon) : dungeonRef(dungeon) {
-    sf::RenderTexture minimapTexture(sf::Vector2u{ MAP_WIDTH, MAP_HEIGHT });
-    minimapTexture.clear(sf::Color::Black);
-
-    sf::RectangleShape pixel({ 1.f, 1.f });
-    const MapArray& map = dungeonRef.getMap();
-
-    // Draw dungeon layout ONCE
-    for (int y = 0; y < MAP_HEIGHT; ++y) {
-        for (int x = 0; x < MAP_WIDTH; ++x) {
-            pixel.setFillColor(map[y][x] == 1 ? sf::Color(80, 80, 80)
-                : sf::Color(180, 180, 180));
-            pixel.setPosition({ (float)x, (float)y });
-            minimapTexture.draw(pixel);
-        }
-    }
-    minimapTexture.display();
+    minimapTexture = sf::RenderTexture(sf::Vector2u{ MAP_WIDTH, MAP_HEIGHT });
 
     minimapBg.setSize(sf::Vector2f{ MAP_WIDTH * MINIMAP_SCALE + 4, MAP_HEIGHT * MINIMAP_SCALE + 4 });
     minimapBg.setFillColor(sf::Color(20, 20, 20, 200));
     minimapBg.setPosition(sf::Vector2f{ 8, 8 });
 
-    minimapSprite.emplace(minimapTexture.getTexture());
-    minimapSprite->setScale(sf::Vector2f{ MINIMAP_SCALE, MINIMAP_SCALE });
-    minimapSprite->setPosition(sf::Vector2f{ 10.f, 10.f });
+    regenerateMinimap();
 }
 
 void UI::draw(sf::RenderWindow& window, const Player& player) {
@@ -34,8 +17,8 @@ void UI::draw(sf::RenderWindow& window, const Player& player) {
     window.draw(minimapBg);
 
     // draw minimap
-    minimapSprite->setTexture(minimapTexture.getTexture());
-    window.draw(*minimapSprite);
+    if (minimapSprite.has_value())
+        window.draw(*minimapSprite);
 
     // draw player marker on minimap
     sf::RectangleShape playerMarker(sf::Vector2f{ 5.f, 5.f });
@@ -46,3 +29,25 @@ void UI::draw(sf::RenderWindow& window, const Player& player) {
         });
     window.draw(playerMarker);
 }
+
+void UI::regenerateMinimap() {
+    minimapTexture.clear(sf::Color::Black);
+
+    sf::RectangleShape pixel(sf::Vector2f{ 1.f, 1.f });
+    const MapArray& map = dungeonRef.getMap();
+
+    for (int y = 0; y < MAP_HEIGHT; ++y) {
+        for (int x = 0; x < MAP_WIDTH; ++x) {
+            //pixel.setFillColor(map[y][x] == 1 ? sf::Color::Red : sf::Color::Yellow);
+            pixel.setFillColor(map[y][x] == 1 ? sf::Color(80, 80, 80) : sf::Color(180, 180, 180));
+            pixel.setPosition(sf::Vector2f{ static_cast<float>(x), static_cast<float>(y) });
+            minimapTexture.draw(pixel);
+        }
+    }
+
+    minimapTexture.display();
+    minimapSprite.emplace(minimapTexture.getTexture());
+    minimapSprite->setScale(sf::Vector2f{ MINIMAP_SCALE, MINIMAP_SCALE });
+    minimapSprite->setPosition(sf::Vector2f{ 10.f, 10.f });
+}
+

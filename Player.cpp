@@ -4,7 +4,6 @@
 Player::Player(const Dungeon& dungeon) : dungeonRef(dungeon) {
     playerShape.setSize({ TILE_SIZE - 2.f, TILE_SIZE - 2.f });
     playerShape.setFillColor(sf::Color::Green);
-    playerShape.setPosition(dungeon.findSpawnPoint());
 }
 
 void Player::handleInput() {

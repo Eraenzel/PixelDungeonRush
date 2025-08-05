@@ -8,6 +8,8 @@ public:
     UI(const Dungeon& dungeon);
 
     void draw(sf::RenderWindow& window, const Player& player);
+    void regenerateMinimap(); // call only when dungeon changes
+
 
 private:
     sf::RenderTexture minimapTexture;
