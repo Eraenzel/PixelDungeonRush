@@ -32,6 +32,8 @@ void UI::draw(sf::RenderWindow& window, const Player& player) {
         minimapSprite->getPosition().y + (player.getPosition().y / TILE_SIZE) * MINIMAP_SCALE
         });
     window.draw(playerMarker);
+    drawPlayerHealth(window, player);
+
 }
 
 void UI::regenerateMinimap() {
@@ -61,4 +63,22 @@ void UI::regenerateMinimap() {
 void UI::markMinimapDirty() {
     minimapDirty = true;
 }
+
+void UI::drawPlayerHealth(sf::RenderWindow& window, const Player& player) {
+    float barWidth = 200.f;
+    float barHeight = 20.f;
+    float healthPercent = player.getHealthPercent();
+
+    sf::RectangleShape bg({ barWidth, barHeight });
+    bg.setFillColor(sf::Color(50, 0, 0));
+    bg.setPosition(sf::Vector2f{ 10.f, window.getSize().y - 30.f });
+
+    sf::RectangleShape fill({ barWidth * healthPercent, barHeight });
+    fill.setFillColor(sf::Color::Red);
+    fill.setPosition(sf::Vector2f{ 10.f, window.getSize().y - 30.f });
+
+    window.draw(bg);
+    window.draw(fill);
+}
+
 

@@ -7,6 +7,29 @@ Entity::Entity() {
 
 void Entity::draw(sf::RenderWindow& window) const {
     window.draw(shape);
+
+    // Health bar
+    sf::Vector2f pos = shape.getPosition();
+    sf::Vector2f size = shape.getSize();
+
+    sf::RectangleShape barBg({ size.x, 4.f });
+    barBg.setFillColor(sf::Color(50, 0, 0));
+    barBg.setPosition(sf::Vector2f{ pos.x, pos.y - 6.f});
+
+    sf::RectangleShape barFill({ size.x * getHealthPercent(), 4.f });
+    barFill.setFillColor(sf::Color::Red);
+    barFill.setPosition(sf::Vector2f{ pos.x, pos.y - 6.f });
+
+    window.draw(barBg);
+    window.draw(barFill);
+
+    if (damageFlashTimer.getElapsedTime().asMilliseconds() < 100) {
+        sf::RectangleShape flash;
+        flash.setSize(shape.getSize());
+        flash.setPosition(shape.getPosition());
+        flash.setFillColor(sf::Color(255, 0, 0, 100));
+        window.draw(flash);
+    }
 }
 
 sf::FloatRect Entity::getBounds() const {

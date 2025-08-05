@@ -17,7 +17,18 @@ public:
     bool overlapsWith(const Entity& other) const;
     sf::FloatRect nextPositionWithMove(sf::Vector2f movement) const;
 
+    void setHealth(float health) { currentHealth = std::clamp(health, 0.f, maxHealth); }
+    void takeDamage(float amount) { currentHealth = std::max(0.f, currentHealth - amount); damageFlashTimer.restart();
+    }
+    float getHealth() const { return currentHealth; }
+    float getHealthPercent() const { return currentHealth / maxHealth; }
+    bool isDead() const { return currentHealth <= 0.f; }
+
 protected:
     sf::RectangleShape shape;
     float speed = 2.5f;
+    float maxHealth = 100.f;
+    float currentHealth = 100.f;
+    sf::Clock damageFlashTimer;
+
 };

@@ -60,6 +60,7 @@ void Game::restartGame()
     ui.markMinimapDirty();
     enemies.clear();
     spawnEnemies();
+    player.setHealth(100.f);
 }
 
 void Game::processEvents() {
@@ -75,6 +76,13 @@ void Game::processEvents() {
     if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::E)) camera.zoom(1.1f); // zoom out slowly
     //if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Y)) player.setSpeed(player.getSpeed() + 2.f);
     //if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::X)) player.setSpeed(std::max(1.0f, player.getSpeed() - 2.f));
+    if (state == GameState::Dead) {
+        if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::R)) {
+            restartGame();
+            state = GameState::Playing;
+        }
+        return;
+    }
 }
 
 void Game::update() {
@@ -94,14 +102,28 @@ void Game::update() {
         ui.markMinimapDirty();
     }
 
-    for (auto& enemy : enemies)
+    for (auto& enemy : enemies) {
+        float damageRadius = 40.f;
+        sf::Vector2f delta = enemy.getPosition() - player.getPosition();
         enemy.update(player.getPosition(), blockers);
+        float distSq = delta.x * delta.x + delta.y * delta.y;
 
+        if (distSq < damageRadius * damageRadius) {
+            player.takeDamage(0.5f);  // Adjust damage per frame as needed
+        }
+    }
+    if (player.isDead()) {
+        state = GameState::Dead;
+        return;
+    }
 
     handleCombat();
 
     camera.setCenter(player.getPosition());
     window.setView(camera);
+
+    if (state == GameState::Dead) return; // Pause game updates
+
 }
 
 void Game::render() {
@@ -110,6 +132,23 @@ void Game::render() {
     player.draw(window);
     for (const auto& enemy : enemies)
         enemy.draw(window);
+
+    // --- Draw player health bar ---
+    float barWidth = 200.f;
+    float barHeight = 20.f;
+    float healthRatio = player.getHealthPercent();
+
+    sf::RectangleShape background(sf::Vector2f{ barWidth, barHeight });
+    background.setFillColor(sf::Color(50, 50, 50));
+    background.setPosition(sf::Vector2f{ 10.f, window.getSize().y - 30.f });
+
+    sf::RectangleShape fill(sf::Vector2f{ barWidth * healthRatio, barHeight });
+    fill.setFillColor(sf::Color::Red);
+    fill.setPosition(sf::Vector2f{ 10.f, window.getSize().y - 30.f });
+
+    window.setView(window.getDefaultView());  // Switch to HUD view
+    window.draw(background);
+    window.draw(fill);
 
     if (attackEffect && attackEffectTimer.getElapsedTime().asMilliseconds() < 100) {
         window.draw(*attackEffect);
@@ -122,7 +161,33 @@ void Game::render() {
     window.setView(window.getDefaultView());
     ui.draw(window, player);
 
-    window.display();
+    //window.display();
+
+    if (state == GameState::Dead) {
+        window.setView(window.getDefaultView());
+
+        sf::Font font("assets/Kenney Future.ttf"); // pass the path in the constructor
+
+        sf::Text text(font, "YOU DIED", 64);
+        sf::FloatRect bounds = text.getGlobalBounds();
+        text.setFillColor(sf::Color::Red);
+        text.setStyle(sf::Text::Bold);
+        text.setPosition(sf::Vector2f{
+            (window.getSize().x - bounds.size.x) / 2.f,
+            (window.getSize().y - bounds.size.y) / 2.f - 30.f
+            });
+        sf::Text text1(font, "¨R¨ for restart", 32);
+        text1.setFillColor(sf::Color::Red);
+        text1.setPosition(sf::Vector2f{
+            (window.getSize().x - bounds.size.x) / 2.f,
+            (window.getSize().y - bounds.size.y) / 2.f + 40.f
+            });
+
+        window.draw(text);
+        window.draw(text1);
+       
+    }
+     window.display();
 }
 
 void Game::handleCombat() {
@@ -131,16 +196,18 @@ void Game::handleCombat() {
     float attackRadius = 40.f;
     sf::Vector2f playerPos = player.getPosition();
 
-    // Remove enemies that are close to the player
-    enemies.erase(
-        std::remove_if(enemies.begin(), enemies.end(),
-            [&](const Enemy& enemy) {
-                sf::Vector2f delta = enemy.getPosition() - playerPos;
-                float distSq = delta.x * delta.x + delta.y * delta.y;
-                return distSq < attackRadius * attackRadius;
-            }),
-        enemies.end()
-    );
+    for (auto& enemy : enemies) {
+        sf::Vector2f delta = enemy.getPosition() - player.getPosition();
+        float distSq = delta.x * delta.x + delta.y * delta.y;
+        if (distSq < attackRadius * attackRadius) {
+            enemy.takeDamage(50.f);  // Deal damage
+        }
+    }
+
+    // Remove dead enemies
+    enemies.erase(std::remove_if(enemies.begin(), enemies.end(),
+        [](const Enemy& e) { return e.isDead(); }), enemies.end());
+
     attackCooldown.restart();
     attackEffect.emplace(attackRadius);
     attackEffect->setFillColor(sf::Color(0, 255, 0, 100));

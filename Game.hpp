@@ -11,6 +11,13 @@ public:
     Game();
     void run();
 
+    enum class GameState {
+        Playing,
+        Dead
+    };
+
+    GameState state = GameState::Playing;
+
 private:
     sf::RenderWindow window;
     sf::View camera;
