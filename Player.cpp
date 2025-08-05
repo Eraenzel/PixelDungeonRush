@@ -2,11 +2,12 @@
 #include <SFML/Window/Keyboard.hpp>
 
 Player::Player(const Dungeon& dungeon) : dungeonRef(dungeon) {
-    playerShape.setSize({ TILE_SIZE - 2.f, TILE_SIZE - 2.f });
-    playerShape.setFillColor(sf::Color::Green);
+    shape.setSize({TILE_SIZE - 2.f, TILE_SIZE - 2.f});
+    shape.setFillColor(sf::Color::Green);
+    speed = 5.f;
 }
 
-void Player::handleInput() {
+void Player::handleInput(const std::vector<Entity*>& blockers) {
     sf::Vector2f movement{ 0.f, 0.f };
 
     if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::W)) movement.y -= speed;
@@ -14,38 +15,33 @@ void Player::handleInput() {
     if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::A)) movement.x -= speed;
     if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::D)) movement.x += speed;
 
-    sf::FloatRect nextBounds = playerShape.getGlobalBounds();
+    sf::FloatRect nextBounds = Player::shape.getGlobalBounds();
     nextBounds.position.x += movement.x;
     nextBounds.position.y += movement.y;
 
-    if (canMoveTo(nextBounds)) {
-        playerShape.move(movement);
+    if (canMoveTo(nextBounds, dungeonRef.getMap(), blockers)) {
+        shape.move(movement);
     }
 }
 
-bool Player::canMoveTo(const sf::FloatRect& bounds) const {
-    // Check all four corners of the player's bounding box
-    std::array<sf::Vector2f, 4> corners = {
-        sf::Vector2f{bounds.position.x, bounds.position.y},
-        sf::Vector2f{bounds.position.x + bounds.size.x, bounds.position.y},
-        sf::Vector2f{bounds.position.x, bounds.position.y + bounds.size.y},
-        sf::Vector2f{bounds.position.x + bounds.size.x, bounds.position.y + bounds.size.y}
-    };
+void Player::avoidEnemies(const std::vector<Enemy>& enemies) {
+    sf::FloatRect playerBounds = shape.getGlobalBounds();
+    std::vector<Entity*>blockers;
+    for (const auto& e : enemies)
+        blockers.push_back(const_cast<Enemy*>(&e));
 
-    const MapArray& map = dungeonRef.getMap();
-    for (const auto& corner : corners) {
-        int tileX = static_cast<int>(corner.x / TILE_SIZE);
-        int tileY = static_cast<int>(corner.y / TILE_SIZE);
-
-        if (tileX < 0 || tileX >= MAP_WIDTH || tileY < 0 || tileY >= MAP_HEIGHT)
-            return false;
-
-        if (map[tileY][tileX] == 1)
-            return false;
+    for (const auto& enemy : enemies) {
+        if (overlapsWith(enemy)) {
+            sf::Vector2f away = getPosition() - enemy.getPosition();
+            float lenSq = away.x * away.x + away.y * away.y;
+            if (lenSq > 0.01f) {
+                away /= std::sqrt(lenSq);
+                sf::Vector2f push = away * 3.f;
+                if (canMoveTo(nextPositionWithMove(push), dungeonRef.getMap(), blockers)) {
+                    shape.move(push);
+                }
+            }
+        }
     }
-    return true;
 }
 
-void Player::draw(sf::RenderWindow& window) const {
-    window.draw(playerShape);
-}

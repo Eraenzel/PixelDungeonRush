@@ -7,7 +7,7 @@
 constexpr float TILE_SIZE = 32.f;
 constexpr int MAP_WIDTH = 100;
 constexpr int MAP_HEIGHT = 72;
-constexpr float MINIMAP_SCALE = 3.0f;
+constexpr float MINIMAP_SCALE = 2.0f;
 constexpr int ROOM_ATTEMPTS = 40;
 constexpr int MAX_ROOMS = 12;
 
@@ -28,15 +28,18 @@ public:
     const MapArray& getMap() const { return map; }
 
     const auto& getDiscovered() const { return discovered; }
-    void markVisible(int centerX, int centerY, int radius = 2);
+    bool markVisible(int centerX, int centerY, int radius = 2);
     void clearDiscovery(); // for when restarting the game
-
+    std::vector<sf::Vector2f> getFloorTiles() const;
+    bool lineOfSightClear(const sf::Vector2f& from, const sf::Vector2f& to) const;
 
 private:
     MapArray map;
     sf::RectangleShape floorTile;
     sf::RectangleShape wallTile;
     std::array<std::array<bool, MAP_WIDTH>, MAP_HEIGHT> discovered;
+    std::array<std::array<bool, MAP_WIDTH>, MAP_HEIGHT> currentlyVisible;
+
 
 
     bool roomOverlaps(const Room& a, const Room& b);

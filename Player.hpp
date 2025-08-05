@@ -1,20 +1,18 @@
 #pragma once
-#include <SFML/Graphics.hpp>
 #include "Dungeon.hpp"
+#include "Entity.hpp"
+#include "Enemy.hpp"
 
-class Player {
+class Player : public Entity{
 public:
     Player(const Dungeon& dungeon);
 
-    void handleInput();
-    void draw(sf::RenderWindow& window) const;
-    void setPosition(const sf::Vector2f& pos) { playerShape.setPosition(pos); }
-    sf::Vector2f getPosition() const { return playerShape.getPosition(); }
-    const sf::FloatRect getBounds() const { return playerShape.getGlobalBounds(); }
-    float speed = 5.5f;
-private:
-    const Dungeon& dungeonRef; // to check collisions against the map
-    sf::RectangleShape playerShape;
+    void handleInput(const std::vector<Entity*>& blockers);
+    void avoidEnemies(const std::vector<Enemy>& enemies);  
 
-    bool canMoveTo(const sf::FloatRect& bounds) const;
+    void setSpeed(float s) { speed = s; }
+    float getSpeed() const { return speed; }
+
+private:
+    const Dungeon& dungeonRef; 
 };

@@ -8,12 +8,13 @@ public:
     UI(const Dungeon& dungeon);
 
     void draw(sf::RenderWindow& window, const Player& player);
-    void regenerateMinimap(); // call only when dungeon changes
-
+    void regenerateMinimap(); // call only when dungeon changes 
+    void markMinimapDirty();  
 
 private:
     sf::RenderTexture minimapTexture;
     std::optional<sf::Sprite> minimapSprite;
     sf::RectangleShape minimapBg;
     const Dungeon& dungeonRef;
+    bool minimapDirty = true;
 };

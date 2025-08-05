@@ -4,6 +4,7 @@
 UI::UI(const Dungeon& dungeon) : dungeonRef(dungeon) {
     minimapTexture = sf::RenderTexture(sf::Vector2u{ MAP_WIDTH, MAP_HEIGHT });
 
+
     minimapBg.setSize(sf::Vector2f{ MAP_WIDTH * MINIMAP_SCALE + 4, MAP_HEIGHT * MINIMAP_SCALE + 4 });
     minimapBg.setFillColor(sf::Color(20, 20, 20, 200));
     minimapBg.setPosition(sf::Vector2f{ 8, 8 });
@@ -12,7 +13,10 @@ UI::UI(const Dungeon& dungeon) : dungeonRef(dungeon) {
 }
 
 void UI::draw(sf::RenderWindow& window, const Player& player) {
-
+    if (minimapDirty) {
+        regenerateMinimap();
+        minimapDirty = false;
+    }
     // draw minimap frame
     window.draw(minimapBg);
 
@@ -52,5 +56,9 @@ void UI::regenerateMinimap() {
     minimapSprite.emplace(minimapTexture.getTexture());
     minimapSprite->setScale(sf::Vector2f{ MINIMAP_SCALE, MINIMAP_SCALE });
     minimapSprite->setPosition(sf::Vector2f{ 10.f, 10.f });
+}
+
+void UI::markMinimapDirty() {
+    minimapDirty = true;
 }
 
