@@ -27,10 +27,17 @@ public:
     sf::Vector2f findSpawnPoint() const;
     const MapArray& getMap() const { return map; }
 
+    const auto& getDiscovered() const { return discovered; }
+    void markVisible(int centerX, int centerY, int radius = 2);
+    void clearDiscovery(); // for when restarting the game
+
+
 private:
     MapArray map;
     sf::RectangleShape floorTile;
     sf::RectangleShape wallTile;
+    std::array<std::array<bool, MAP_WIDTH>, MAP_HEIGHT> discovered;
+
 
     bool roomOverlaps(const Room& a, const Room& b);
     void carveRoom(const Room& r);

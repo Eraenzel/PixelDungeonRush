@@ -36,9 +36,12 @@ void UI::regenerateMinimap() {
     sf::RectangleShape pixel(sf::Vector2f{ 1.f, 1.f });
     const MapArray& map = dungeonRef.getMap();
 
+    const auto& discovered = dungeonRef.getDiscovered();
+
     for (int y = 0; y < MAP_HEIGHT; ++y) {
         for (int x = 0; x < MAP_WIDTH; ++x) {
-            //pixel.setFillColor(map[y][x] == 1 ? sf::Color::Red : sf::Color::Yellow);
+            if (!discovered[y][x]) continue;
+
             pixel.setFillColor(map[y][x] == 1 ? sf::Color(80, 80, 80) : sf::Color(180, 180, 180));
             pixel.setPosition(sf::Vector2f{ static_cast<float>(x), static_cast<float>(y) });
             minimapTexture.draw(pixel);

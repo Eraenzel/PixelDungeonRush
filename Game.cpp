@@ -9,8 +9,8 @@ Game::Game()
     window.setFramerateLimit(60);
 
     dungeon.generate();
-    ui.regenerateMinimap();
     player.setPosition(dungeon.findSpawnPoint());
+    dungeon.clearDiscovery();
 
     camera.setSize(sf::Vector2f{
         static_cast<float>(window.getSize().x),
@@ -34,8 +34,9 @@ void Game::processEvents() {
     // --- RESTART/EXIT ---
     if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::R)) {
         dungeon.generate();
+        dungeon.clearDiscovery();
         player.setPosition(dungeon.findSpawnPoint());
-        player.speed = 2.5f;
+        player.speed = 5.5f;
         ui.regenerateMinimap();
         render();
     }
@@ -52,6 +53,12 @@ void Game::update() {
     player.handleInput();
     camera.setCenter(player.getPosition());
     window.setView(camera);
+
+    sf::Vector2f pos = player.getPosition();
+    int tileX = static_cast<int>(pos.x / TILE_SIZE);
+    int tileY = static_cast<int>(pos.y / TILE_SIZE);
+    dungeon.markVisible(tileX, tileY, 4);
+    ui.regenerateMinimap();
 }
 
 void Game::render() {
