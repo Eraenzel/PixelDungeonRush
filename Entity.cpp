@@ -80,5 +80,11 @@ sf::FloatRect Entity::nextPositionWithMove(sf::Vector2f movement) const {
     return next;
 }
 
+sf::Vector2f Entity::getCenter() const {
+    sf::FloatRect b = shape.getGlobalBounds();
+    return { b.position.x + b.size.x * 0.5f,
+             b.position.y + b.size.y * 0.5f };
+}
+
 
 

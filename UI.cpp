@@ -81,4 +81,27 @@ void UI::drawPlayerHealth(sf::RenderWindow& window, const Player& player) {
     window.draw(fill);
 }
 
+void UI::drawDeathScreen(sf::RenderWindow& window, const sf::Font& font)
+{
+    window.setView(window.getDefaultView());
+
+    sf::Text deathText(font, "YOU DIED", 64);
+    sf::FloatRect bounds = deathText.getGlobalBounds();
+    deathText.setFillColor(sf::Color::Red);
+    deathText.setStyle(sf::Text::Bold);
+    deathText.setPosition(sf::Vector2f{
+        (window.getSize().x - bounds.size.x) / 2.f,
+        (window.getSize().y - bounds.size.y) / 2.f - 30.f
+        });
+    sf::Text restartText(font, "press 'R' for restart", 32);
+    restartText.setFillColor(sf::Color::Red);
+    restartText.setPosition(sf::Vector2f{
+        (window.getSize().x - bounds.size.x) / 2.f,
+        (window.getSize().y - bounds.size.y) / 2.f + 40.f
+        });
+
+    window.draw(deathText);
+    window.draw(restartText);
+}
+
 

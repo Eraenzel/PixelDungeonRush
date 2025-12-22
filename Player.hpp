@@ -7,7 +7,7 @@ class Player : public Entity{
 public:
     Player(const Dungeon& dungeon);
 
-    void handleInput(const std::vector<Entity*>& blockers);
+    void handleInput(const std::vector<Entity*>& blockers, float dt);
     void avoidEnemies(const std::vector<Enemy>& enemies);  
 
     void setSpeed(float s) { speed = s; }

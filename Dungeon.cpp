@@ -138,6 +138,10 @@ void Dungeon::clearDiscovery() {
 }
 
 bool Dungeon::markVisible(int centerX, int centerY, int radius) {
+    
+    centerX = std::clamp(centerX, 0, MAP_WIDTH - 1);
+    centerY = std::clamp(centerY, 0, MAP_HEIGHT - 1);
+    
     // Clear previous frame’s visibility
     for (auto& row : currentlyVisible) row.fill(false);
 

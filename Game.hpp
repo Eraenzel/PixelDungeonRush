@@ -5,6 +5,7 @@
 #include <vector>
 #include "Dungeon.hpp"
 #include "UI.hpp"
+#include <random>
 
 class Game {
 public:
@@ -23,6 +24,10 @@ private:
     sf::View camera;
     std::optional<sf::Event> event;
     std::vector<Enemy> enemies;
+    sf::Font font;
+    bool fontLoaded = false;
+    std::mt19937 rng;
+	sf::Clock frameClock;
 
     Player player;
     Dungeon dungeon;
@@ -34,6 +39,12 @@ private:
     std::optional<sf::CircleShape> attackEffect;
     sf::Clock attackEffectTimer;
 
+    // Game constants
+    static constexpr float AttackRadius = 40.f;
+    static constexpr int   EnemiesPerRoom = 5;
+    static constexpr float EnemyContactDPS = 30.f;
+    static constexpr int AttackCooldownMs = 500;
+    //static constexpr sf::Time AttackCooldown = sf::milliseconds(500);
     
     void processEvents();
     void update();
@@ -41,4 +52,5 @@ private:
     void spawnEnemies();
     void restartGame();
     void handleCombat();
+    void handleInputDebug(float dt);
 };

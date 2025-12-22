@@ -11,6 +11,7 @@ public:
     void regenerateMinimap(); // call only when dungeon changes 
     void markMinimapDirty();  
     void drawPlayerHealth(sf::RenderWindow& window, const Player& player);
+	void drawDeathScreen(sf::RenderWindow& window, const sf::Font& font);
 
 private:
     sf::RenderTexture minimapTexture;

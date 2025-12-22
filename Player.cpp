@@ -4,16 +4,18 @@
 Player::Player(const Dungeon& dungeon) : dungeonRef(dungeon) {
     shape.setSize({TILE_SIZE - 2.f, TILE_SIZE - 2.f});
     shape.setFillColor(sf::Color::Green);
-    speed = 5.f;
+    speed = 140.f;
 }
 
-void Player::handleInput(const std::vector<Entity*>& blockers) {
+void Player::handleInput(const std::vector<Entity*>& blockers, float dt) {
     sf::Vector2f movement{ 0.f, 0.f };
 
     if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::W)) movement.y -= speed;
     if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::S)) movement.y += speed;
     if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::A)) movement.x -= speed;
     if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::D)) movement.x += speed;
+
+	movement *= dt;
 
     sf::FloatRect nextBounds = Player::shape.getGlobalBounds();
     nextBounds.position.x += movement.x;
@@ -44,4 +46,5 @@ void Player::avoidEnemies(const std::vector<Enemy>& enemies) {
         }
     }
 }
+
 

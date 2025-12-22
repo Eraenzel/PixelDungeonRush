@@ -32,13 +32,13 @@ public:
     void clearDiscovery(); // for when restarting the game
     std::vector<sf::Vector2f> getFloorTiles() const;
     bool lineOfSightClear(const sf::Vector2f& from, const sf::Vector2f& to) const;
+    std::array<std::array<bool, MAP_WIDTH>, MAP_HEIGHT> currentlyVisible;
 
 private:
     MapArray map;
     sf::RectangleShape floorTile;
     sf::RectangleShape wallTile;
     std::array<std::array<bool, MAP_WIDTH>, MAP_HEIGHT> discovered;
-    std::array<std::array<bool, MAP_WIDTH>, MAP_HEIGHT> currentlyVisible;
 
 
 

@@ -4,10 +4,10 @@
 Enemy::Enemy(const sf::Vector2f& position, const Dungeon& dungeon) : dungeonRef(&dungeon) {
     shape.setFillColor(sf::Color::Red);
     shape.setPosition(position);
-    speed = 3.f;
+    speed = 100.f;
 }
 
-void Enemy::update(const sf::Vector2f& playerPos, const std::vector<Entity*>& blockers) {
+void Enemy::update(const sf::Vector2f& playerPos, const std::vector<Entity*>& blockers, float dt) {
     if (!dungeonRef) return;
     sf::Vector2f direction = playerPos - shape.getPosition();
     float distance = std::sqrt(direction.x * direction.x + direction.y * direction.y);
@@ -15,7 +15,7 @@ void Enemy::update(const sf::Vector2f& playerPos, const std::vector<Entity*>& bl
     if (distance > 300.f || distance <= 0.f || !hasLineOfSightTo(playerPos)) return;  // Ignore if too far
 
         direction /= distance; // Normalize
-        sf::Vector2f movement = direction * speed;
+        sf::Vector2f movement = direction * speed * dt;
 
         sf::FloatRect nextBounds = shape.getGlobalBounds();        
         nextBounds.position += movement;

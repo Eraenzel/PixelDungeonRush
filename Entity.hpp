@@ -23,10 +23,11 @@ public:
     float getHealth() const { return currentHealth; }
     float getHealthPercent() const { return currentHealth / maxHealth; }
     bool isDead() const { return currentHealth <= 0.f; }
+    sf::Vector2f getCenter() const;
 
 protected:
     sf::RectangleShape shape;
-    float speed = 2.5f;
+    float speed = 120.f;
     float maxHealth = 100.f;
     float currentHealth = 100.f;
     sf::Clock damageFlashTimer;
