@@ -206,4 +206,11 @@ bool Dungeon::lineOfSightClear(const sf::Vector2f& from, const sf::Vector2f& to)
     return true;
 }
 
+bool Dungeon::isTileCurrentlyVisible(int x, int y) const {
+    if (x < 0 || y < 0 || x >= MAP_WIDTH || y >= MAP_HEIGHT)
+        return false;
+
+    return currentlyVisible[y][x];
+}
+
 

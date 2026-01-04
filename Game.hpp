@@ -44,6 +44,7 @@ private:
     static constexpr int   EnemiesPerRoom = 5;
     static constexpr float EnemyContactDPS = 30.f;
     static constexpr int AttackCooldownMs = 500;
+	static constexpr int VisionRadiusTiles = 4;
     //static constexpr sf::Time AttackCooldown = sf::milliseconds(500);
     
     void processEvents();

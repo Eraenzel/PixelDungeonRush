@@ -33,14 +33,13 @@ public:
     std::vector<sf::Vector2f> getFloorTiles() const;
     bool lineOfSightClear(const sf::Vector2f& from, const sf::Vector2f& to) const;
     std::array<std::array<bool, MAP_WIDTH>, MAP_HEIGHT> currentlyVisible;
+    bool isTileCurrentlyVisible(int x, int y) const;
 
 private:
     MapArray map;
     sf::RectangleShape floorTile;
     sf::RectangleShape wallTile;
     std::array<std::array<bool, MAP_WIDTH>, MAP_HEIGHT> discovered;
-
-
 
     bool roomOverlaps(const Room& a, const Room& b);
     void carveRoom(const Room& r);

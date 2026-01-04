@@ -127,7 +127,9 @@ void Game::update() {
     int tileX = static_cast<int>(pos.x / TILE_SIZE);
     int tileY = static_cast<int>(pos.y / TILE_SIZE);
 
-    if (dungeon.markVisible(tileX, tileY, 4)) {  // returns true if anything was revealed
+    dungeon.markVisible(tileX, tileY, VisionRadiusTiles);
+
+    if (dungeon.markVisible(tileX, tileY, VisionRadiusTiles)) {  // returns true if anything was revealed
         ui.markMinimapDirty();
     }
 
@@ -163,12 +165,15 @@ void Game::render() {
     dungeon.draw(window);
     player.draw(window);
     for (const auto& enemy : enemies) {
-        /*sf::Vector2f enemyPos = enemy.getPosition();
-        int tx = static_cast<int>(enemyPos.x / TILE_SIZE);
-        int ty = static_cast<int>(enemyPos.y / TILE_SIZE);
 
-        if (dungeon.currentlyVisible[tx][ty])*/
+        sf::Vector2f pos = enemy.getPosition();
+
+        int tileX = static_cast<int>(pos.x / TILE_SIZE);
+        int tileY = static_cast<int>(pos.y / TILE_SIZE);
+
+        if (dungeon.isTileCurrentlyVisible(tileX, tileY)) {
             enemy.draw(window);
+        }
     }
 
     if (attackEffect && attackEffectTimer.getElapsedTime().asMilliseconds() < 100) {
