@@ -18,7 +18,7 @@ Game::Game()
     camera.zoom(0.4f);
 
     if (!fontLoaded) {
-        font.openFromFile("assets/Kenney Future.ttf");
+        fontLoaded = font.openFromFile("assets/Kenney Future.ttf");
         fontLoaded = true;
 	}
 }
@@ -129,9 +129,9 @@ void Game::update() {
 
     dungeon.markVisible(tileX, tileY, VisionRadiusTiles);
 
-    if (dungeon.markVisible(tileX, tileY, VisionRadiusTiles)) {  // returns true if anything was revealed
-        ui.markMinimapDirty();
-    }
+    (dungeon.markVisible(tileX, tileY, VisionRadiusTiles));  // returns true if anything was revealed
+    ui.markMinimapDirty();
+
 
     for (auto& enemy : enemies) {
         float damageRadius = 40.f;
@@ -176,7 +176,7 @@ void Game::render() {
         }
     }
 
-    if (attackEffect && attackEffectTimer.getElapsedTime().asMilliseconds() < 100) {
+    if (attackEffect && attackEffectTimer.getElapsedTime() < AttackEffectDuration) {
         window.draw(*attackEffect);
     }
     else {
