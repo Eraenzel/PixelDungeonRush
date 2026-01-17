@@ -9,7 +9,7 @@ constexpr int MAP_WIDTH = 100;
 constexpr int MAP_HEIGHT = 72;
 constexpr float MINIMAP_SCALE = 2.0f;
 constexpr int ROOM_ATTEMPTS = 40;
-constexpr int MAX_ROOMS = 12;
+constexpr int MAX_ROOMS = 10;
 
 using MapArray = std::array<std::array<int, MAP_WIDTH>, MAP_HEIGHT>;
 
@@ -26,6 +26,9 @@ public:
     void draw(sf::RenderWindow& window) const;
     sf::Vector2f findSpawnPoint() const;
     const MapArray& getMap() const { return map; }
+    const std::vector<Room>& getRooms() const;
+    std::vector<Room> rooms;
+
 
     const auto& getDiscovered() const { return discovered; }
     bool markVisible(int centerX, int centerY, int radius = 2);

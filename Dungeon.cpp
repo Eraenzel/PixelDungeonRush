@@ -59,7 +59,7 @@ void Dungeon::generate() {
     std::uniform_int_distribution<int> roomWidth(8, 16);
     std::uniform_int_distribution<int> roomHeight(6, 12);
 
-    std::vector<Room> rooms;
+    rooms.clear();
     for (auto& row : currentlyVisible) row.fill(false);
 
 
@@ -212,5 +212,10 @@ bool Dungeon::isTileCurrentlyVisible(int x, int y) const {
 
     return currentlyVisible[y][x];
 }
+
+const std::vector<Room>& Dungeon::getRooms() const {
+    return rooms;
+}
+
 
 

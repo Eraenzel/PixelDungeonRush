@@ -17,10 +17,7 @@ Game::Game()
         static_cast<float>(window.getSize().y) });
     camera.zoom(0.4f);
 
-    if (!fontLoaded) {
-        fontLoaded = font.openFromFile("assets/Kenney Future.ttf");
-        fontLoaded = true;
-	}
+    fontLoaded = font.openFromFile("assets/Kenney Future.ttf");
 }
 
 void Game::run() {
@@ -64,6 +61,7 @@ void Game::restartGame()
     ui.markMinimapDirty();
     enemies.clear();
     spawnEnemies();
+	spawnBoss();
     player.setHealth(100.f);
     state = GameState::Playing;
 }
@@ -113,7 +111,9 @@ void Game::handleInputDebug(float dt) {
 }
 
 void Game::update() {
-	float dt = frameClock.restart().asSeconds();
+    if (state == GameState::Dead) return; // Pause game updates
+    
+    float dt = frameClock.restart().asSeconds();
 
     // Prepare enemy pointers for collision checks
     std::vector<Entity*> blockers;
@@ -128,24 +128,79 @@ void Game::update() {
     int tileY = static_cast<int>(pos.y / TILE_SIZE);
 
     dungeon.markVisible(tileX, tileY, VisionRadiusTiles);
-
-    (dungeon.markVisible(tileX, tileY, VisionRadiusTiles));  // returns true if anything was revealed
     ui.markMinimapDirty();
 
 
     for (auto& enemy : enemies) {
-        float damageRadius = 40.f;
         enemy.update(player.getPosition(), blockers, dt);
 
+        enemy.updateCooldown();
+
+        sf::FloatRect playerBounds = player.getBounds();
         sf::Vector2f enemyCenter = enemy.getCenter();
-        sf::Vector2f playerCenter = player.getCenter();
-        sf::Vector2f delta = enemyCenter - playerCenter;
+
+
+        float left = playerBounds.position.x;
+        float right = playerBounds.position.x + playerBounds.size.x;
+        float top = playerBounds.position.y;
+        float bottom = playerBounds.position.y + playerBounds.size.y;
+
+        float closestX = std::clamp(enemyCenter.x, left, right);
+        float closestY = std::clamp(enemyCenter.y, top, bottom);
+
+        float dx = enemyCenter.x - closestX;
+        float dy = enemyCenter.y - closestY;
+
+        //sf::Vector2f delta = enemy.getCenter() - player.getCenter();;
+        float distSq = dx * dx + dy * dy;
+        float rangeSq = Enemy::AttackRange * Enemy::AttackRange;
+
+        if (distSq <= rangeSq)
+        { 
+            if (enemy.canAttack())
+            {               
+				enemy.startWindup();
+            }
+
+            if (enemy.isWindingUp() && enemy.windupTimer.getElapsedTime() >= Enemy::AttackWindupTime)
+            {
+                //player.takeDamage(EnemyContactDPS * dt);  
+			    player.takeDamage(Enemy::AttackDamage);
+
+                attackEffect.emplace(Enemy::AttackRange);
+                attackEffect->setOrigin(sf::Vector2f{ AttackRadius, AttackRadius });
+                attackEffect->setPosition(enemy.getCenter());
+                attackEffect->setFillColor(sf::Color(255, 80, 80, 120));
+                attackEffectTimer.restart();
+
+			    enemy.finishAttack();
+            }
+        }
+        else
+        {
+            enemy.cancelWindup();
+		}
+    }
+
+    auto pit = pickups.begin();
+    while (pit != pickups.end()) {
+
+        sf::Vector2f delta = pit->position - player.getCenter();
         float distSq = delta.x * delta.x + delta.y * delta.y;
 
-        if (distSq < damageRadius * damageRadius) {
-            player.takeDamage(EnemyContactDPS * dt);  // Adjust damage per frame as needed
+        if (distSq < 20.f * 20.f) { // pickup radius
+
+            if (pit->type == Pickup::Type::Heal) {
+                player.setHealth(player.getHealth() + pit->value);
+            }
+
+            pit = pickups.erase(pit);
+        }
+        else {
+            ++pit;
         }
     }
+
     if (player.isDead()) {
         state = GameState::Dead;
         return;
@@ -155,9 +210,6 @@ void Game::update() {
     window.setView(camera);
 
 	handleInputDebug(dt);
-
-    if (state == GameState::Dead) return; // Pause game updates
-
 }
 
 void Game::render() {
@@ -174,6 +226,10 @@ void Game::render() {
         if (dungeon.isTileCurrentlyVisible(tileX, tileY)) {
             enemy.draw(window);
         }
+    }
+
+    for (const auto& pickup : pickups) {
+        window.draw(pickup.shape);
     }
 
     if (attackEffect && attackEffectTimer.getElapsedTime() < AttackEffectDuration) {
@@ -198,13 +254,29 @@ void Game::handleCombat() {
         sf::Vector2f delta = enemy.getPosition() - player.getPosition();
         float distSq = delta.x * delta.x + delta.y * delta.y;
         if (distSq < AttackRadius * AttackRadius) {
-            enemy.takeDamage(50.f);  // Deal damage
+            enemy.takeDamage(40.f);  // Deal damage
         }
     }
 
     // Remove dead enemies
-    enemies.erase(std::remove_if(enemies.begin(), enemies.end(),
-        [](const Enemy& e) { return e.isDead(); }), enemies.end());
+    auto it = enemies.begin();
+    while (it != enemies.end()) {
+        if (it->isDead()) {
+
+            // Spawn heal pickup at enemy center
+            pickups.emplace_back(
+                it->getCenter(),
+                Pickup::Type::Heal,
+                20.f
+            );
+
+            it = enemies.erase(it);
+        }
+        else {
+            ++it;
+        }
+    }
+
 
     attackCooldown.restart();
     attackEffect.emplace(AttackRadius);
@@ -219,5 +291,20 @@ bool Game::canAttack() const {
     return attackCooldown.getElapsedTime().asMilliseconds() > AttackCooldownMs; 
 }
 
+void Game::spawnBoss()
+{
+    const auto& rooms = dungeon.getRooms();
+    if (rooms.empty()) return;
+
+    const Room& bossRoom = rooms.back();
+
+    sf::Vector2f bossPos(
+        bossRoom.centerX() * TILE_SIZE,
+        bossRoom.centerY() * TILE_SIZE
+    );
+
+    enemies.emplace_back(bossPos, dungeon);
+    enemies.back().makeBoss();
+}
 
 
