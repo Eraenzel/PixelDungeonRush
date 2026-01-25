@@ -54,6 +54,8 @@ private:
     Player player;
     Dungeon dungeon;
     UI ui;
+	bool bossAlive = true;
+	int enemiesDefeated = 0;
 
     sf::Clock attackCooldown;
     bool canAttack() const;
@@ -63,11 +65,15 @@ private:
 
     // Game constants
     static constexpr float AttackRadius = 40.f;
-    static constexpr int   EnemiesPerRoom = 5;
+    static constexpr int   EnemiesPerRoom = 10;
     static constexpr float EnemyContactDPS = 30.f;
     static constexpr int AttackCooldownMs = 500;
 	static constexpr int VisionRadiusTiles = 5;
     sf::Time AttackEffectDuration = sf::milliseconds(100);
+	static constexpr float BossSpawnThreshold = 1; // enemies defeated before boss spawns
+	bool bossSpawned = false;
+    static constexpr float BossMinSpawnDist = 6.f * TILE_SIZE;
+    static constexpr float BossMaxSpawnDist = 12.f * TILE_SIZE;
 
     //static constexpr sf::Time AttackCooldown = sf::milliseconds(500);
     
@@ -76,8 +82,10 @@ private:
     void render();
     void spawnEnemies();
     void restartGame();
-    void handleCombat();
+    void handlePlayerAttack();
+	void handleEnemyAttacks(std::vector<Entity*>& blockers, float dt);
     void handleInputDebug(float dt);
 	void spawnBoss();
+	void endRun();
 
 };

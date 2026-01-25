@@ -104,4 +104,27 @@ void UI::drawDeathScreen(sf::RenderWindow& window, const sf::Font& font)
     window.draw(restartText);
 }
 
+void UI::drawWinScreen(sf::RenderWindow& window, const sf::Font& font)
+{
+    window.setView(window.getDefaultView());
+
+    sf::Text winText(font, "YOU WIN", 64);
+    sf::FloatRect bounds = winText.getGlobalBounds();
+    winText.setFillColor(sf::Color::Cyan);
+    winText.setStyle(sf::Text::Bold);
+    winText.setPosition(sf::Vector2f{
+        (window.getSize().x - bounds.size.x) / 2.f,
+        (window.getSize().y - bounds.size.y) / 2.f - 30.f
+        });
+    sf::Text restartText(font, "press 'R' for restart", 32);
+    restartText.setFillColor(sf::Color::Cyan);
+    restartText.setPosition(sf::Vector2f{
+        (window.getSize().x - bounds.size.x) / 2.f,
+        (window.getSize().y - bounds.size.y) / 2.f + 40.f
+        });
+
+    window.draw(winText);
+    window.draw(restartText);
+}
+
 

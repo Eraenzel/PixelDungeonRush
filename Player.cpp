@@ -10,10 +10,10 @@ Player::Player(const Dungeon& dungeon) : dungeonRef(dungeon) {
 void Player::handleInput(const std::vector<Entity*>& blockers, float dt) {
     sf::Vector2f movement{ 0.f, 0.f };
 
-    if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::W)) movement.y -= speed;
-    if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::S)) movement.y += speed;
-    if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::A)) movement.x -= speed;
-    if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::D)) movement.x += speed;
+    if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::W) || sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Up)) movement.y -= speed;
+    if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::S) || sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Down)) movement.y += speed;
+    if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::A) || sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Left)) movement.x -= speed;
+    if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::D) || sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Right)) movement.x += speed;
 
 	movement *= dt;
 

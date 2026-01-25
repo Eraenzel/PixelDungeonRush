@@ -61,9 +61,12 @@ void Game::restartGame()
     ui.markMinimapDirty();
     enemies.clear();
     spawnEnemies();
-	spawnBoss();
+	//spawnBoss();
     player.setHealth(100.f);
     state = GameState::Playing;
+	enemiesDefeated = 0;
+	bossAlive = true;
+	bossSpawned = false;
 }
 
 void Game::processEvents() {
@@ -90,7 +93,7 @@ void Game::processEvents() {
 
                 case sf::Keyboard::Key::F:
                     if (state == GameState::Playing && canAttack())
-						handleCombat();
+						handlePlayerAttack();
 					break;
 
                 default:
@@ -130,57 +133,7 @@ void Game::update() {
     dungeon.markVisible(tileX, tileY, VisionRadiusTiles);
     ui.markMinimapDirty();
 
-
-    for (auto& enemy : enemies) {
-        enemy.update(player.getPosition(), blockers, dt);
-
-        enemy.updateCooldown();
-
-        sf::FloatRect playerBounds = player.getBounds();
-        sf::Vector2f enemyCenter = enemy.getCenter();
-
-
-        float left = playerBounds.position.x;
-        float right = playerBounds.position.x + playerBounds.size.x;
-        float top = playerBounds.position.y;
-        float bottom = playerBounds.position.y + playerBounds.size.y;
-
-        float closestX = std::clamp(enemyCenter.x, left, right);
-        float closestY = std::clamp(enemyCenter.y, top, bottom);
-
-        float dx = enemyCenter.x - closestX;
-        float dy = enemyCenter.y - closestY;
-
-        //sf::Vector2f delta = enemy.getCenter() - player.getCenter();;
-        float distSq = dx * dx + dy * dy;
-        float rangeSq = Enemy::AttackRange * Enemy::AttackRange;
-
-        if (distSq <= rangeSq)
-        { 
-            if (enemy.canAttack())
-            {               
-				enemy.startWindup();
-            }
-
-            if (enemy.isWindingUp() && enemy.windupTimer.getElapsedTime() >= Enemy::AttackWindupTime)
-            {
-                //player.takeDamage(EnemyContactDPS * dt);  
-			    player.takeDamage(Enemy::AttackDamage);
-
-                attackEffect.emplace(Enemy::AttackRange);
-                attackEffect->setOrigin(sf::Vector2f{ AttackRadius, AttackRadius });
-                attackEffect->setPosition(enemy.getCenter());
-                attackEffect->setFillColor(sf::Color(255, 80, 80, 120));
-                attackEffectTimer.restart();
-
-			    enemy.finishAttack();
-            }
-        }
-        else
-        {
-            enemy.cancelWindup();
-		}
-    }
+    handleEnemyAttacks(blockers, dt);
 
     auto pit = pickups.begin();
     while (pit != pickups.end()) {
@@ -242,27 +195,51 @@ void Game::render() {
     window.setView(window.getDefaultView());
     ui.draw(window, player);
 
-    if (state == GameState::Dead && fontLoaded) {
+    if (state == GameState::Dead && fontLoaded && player.getHealth() <= 0) {
 		ui.drawDeathScreen(window, font);      
     }
-     window.display();
+
+    if (state == GameState::Dead && fontLoaded && !bossAlive) {
+        ui.drawWinScreen(window, font);
+    }
+        window.display();
 }
 
-void Game::handleCombat() {
+void Game::handlePlayerAttack() {
 
     for (auto& enemy : enemies) {
-        sf::Vector2f delta = enemy.getPosition() - player.getPosition();
-        float distSq = delta.x * delta.x + delta.y * delta.y;
-        if (distSq < AttackRadius * AttackRadius) {
+
+        sf::Vector2f playerCenter = player.getCenter();
+        sf::FloatRect enemyBounds = enemy.getBounds();
+
+        float left = enemyBounds.position.x;
+        float right = enemyBounds.position.x + enemyBounds.size.x;
+        float top = enemyBounds.position.y;
+        float bottom = enemyBounds.position.y + enemyBounds.size.y;
+
+        float closestX = std::clamp(playerCenter.x, left, right);
+        float closestY = std::clamp(playerCenter.y, top, bottom);
+
+        float dx = playerCenter.x - closestX;
+        float dy = playerCenter.y - closestY;
+        
+        float distSq = dx * dx + dy * dy;
+
+        if (distSq <= AttackRadius * AttackRadius) {
             enemy.takeDamage(40.f);  // Deal damage
         }
     }
+
+    bool bossKilledThisFrame = false;
 
     // Remove dead enemies
     auto it = enemies.begin();
     while (it != enemies.end()) {
         if (it->isDead()) {
 
+            if (it->isBoss) {
+                bossKilledThisFrame = true;
+			}
             // Spawn heal pickup at enemy center
             pickups.emplace_back(
                 it->getCenter(),
@@ -271,12 +248,23 @@ void Game::handleCombat() {
             );
 
             it = enemies.erase(it);
+            enemiesDefeated++;
         }
         else {
             ++it;
         }
     }
 
+    if (!bossSpawned && enemiesDefeated >= BossSpawnThreshold) {
+        spawnBoss();
+        bossSpawned = true;
+        bossAlive = true;
+    }
+
+    if (bossKilledThisFrame) {
+        endRun();
+        return;
+    }
 
     attackCooldown.restart();
     attackEffect.emplace(AttackRadius);
@@ -287,13 +275,66 @@ void Game::handleCombat() {
 
 }
 
+void Game::handleEnemyAttacks(std::vector<Entity*>& blockers, float dt)
+{
+    for (auto& enemy : enemies) {
+        enemy.update(player.getPosition(), blockers, dt);
+        enemy.updateCooldown();
+
+        sf::FloatRect playerBounds = player.getBounds();
+        sf::Vector2f enemyCenter = enemy.getCenter();
+
+
+        float left = playerBounds.position.x;
+        float right = playerBounds.position.x + playerBounds.size.x;
+        float top = playerBounds.position.y;
+        float bottom = playerBounds.position.y + playerBounds.size.y;
+
+        float closestX = std::clamp(enemyCenter.x, left, right);
+        float closestY = std::clamp(enemyCenter.y, top, bottom);
+
+        float dx = enemyCenter.x - closestX;
+        float dy = enemyCenter.y - closestY;
+
+        //sf::Vector2f delta = enemy.getCenter() - player.getCenter();;
+        float distSq = dx * dx + dy * dy;
+        float rangeSq = Enemy::AttackRange * Enemy::AttackRange;
+
+        if (distSq <= rangeSq)
+        {
+            if (enemy.canAttack())
+            {
+                enemy.startWindup();
+            }
+
+            if (enemy.isWindingUp() && enemy.windupTimer.getElapsedTime() >= Enemy::AttackWindupTime)
+            {
+                //player.takeDamage(EnemyContactDPS * dt);  
+                player.takeDamage(Enemy::AttackDamage);
+
+                attackEffect.emplace(Enemy::AttackRange);
+                attackEffect->setOrigin(sf::Vector2f{ AttackRadius, AttackRadius });
+                attackEffect->setPosition(enemy.getCenter());
+                attackEffect->setFillColor(sf::Color(255, 80, 80, 120));
+                attackEffectTimer.restart();
+
+                enemy.finishAttack();
+            }
+        }
+        else
+        {
+            enemy.cancelWindup();
+        }
+    }
+}
+
 bool Game::canAttack() const {
     return attackCooldown.getElapsedTime().asMilliseconds() > AttackCooldownMs; 
 }
 
 void Game::spawnBoss()
 {
-    const auto& rooms = dungeon.getRooms();
+    /*const auto& rooms = dungeon.getRooms();
     if (rooms.empty()) return;
 
     const Room& bossRoom = rooms.back();
@@ -301,10 +342,40 @@ void Game::spawnBoss()
     sf::Vector2f bossPos(
         bossRoom.centerX() * TILE_SIZE,
         bossRoom.centerY() * TILE_SIZE
-    );
+    );*/
+
+    std::vector<sf::Vector2f> floorTiles = dungeon.getFloorTiles();
+    if (floorTiles.empty())
+        return;
+
+    sf::Vector2f playerPos = player.getPosition();
+
+    std::vector<sf::Vector2f> candidates;
+    for (const auto& tilePos : floorTiles) {
+        sf::Vector2f delta = tilePos - playerPos;
+        float distSq = delta.x * delta.x + delta.y * delta.y;
+
+        if (distSq >= BossMinSpawnDist * BossMinSpawnDist &&
+            distSq <= BossMaxSpawnDist * BossMaxSpawnDist) {
+            candidates.push_back(tilePos);
+        }
+    }
+
+    // Fallback: if no tile fits, relax the constraint
+    if (candidates.empty()) {
+        candidates = floorTiles;
+    }
+
+    std::uniform_int_distribution<std::size_t> dist(0, candidates.size() - 1);
+    sf::Vector2f bossPos = candidates[dist(rng)] + sf::Vector2f{ TILE_SIZE * 0.5f, TILE_SIZE * 0.5f };
 
     enemies.emplace_back(bossPos, dungeon);
     enemies.back().makeBoss();
+}
+
+void Game::endRun() {
+    state = GameState::Dead;
+    bossAlive = false; // reuse Dead for now
 }
 
 
