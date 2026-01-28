@@ -217,5 +217,12 @@ const std::vector<Room>& Dungeon::getRooms() const {
     return rooms;
 }
 
+bool Dungeon::isFloor(int x, int y) const {
+    if (x < 0 || y < 0 || x >= MAP_WIDTH || y >= MAP_HEIGHT)
+        return false;
+
+    return map[y][x] == 0; // 0 = floor, 1 = wall
+}
+
 
 

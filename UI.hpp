@@ -13,6 +13,8 @@ public:
     void drawPlayerHealth(sf::RenderWindow& window, const Player& player);
 	void drawDeathScreen(sf::RenderWindow& window, const sf::Font& font);
 	void drawWinScreen(sf::RenderWindow& window, const sf::Font& font);
+    void setBossMarker(const sf::Vector2f& worldPos);
+    void clearBossMarker();
 
 private:
     sf::RenderTexture minimapTexture;
@@ -20,4 +22,5 @@ private:
     sf::RectangleShape minimapBg;
     const Dungeon& dungeonRef;
     bool minimapDirty = true;
+    std::optional<sf::Vector2f> bossMarkerWorldPos;
 };

@@ -27,7 +27,8 @@ public:
 	AttackState attackState = AttackState::Idle;
 
     static constexpr float AttackRange = 40.f;
-    static constexpr float AttackDamage = 15.f;
+    static constexpr float AttackDamageMax = 10.f;
+    static constexpr float AttackDamageMin = 20.f;
     sf::Clock attackCooldown;
     sf::Clock windupTimer;
     static constexpr sf::Time AttackWindupTime = sf::milliseconds(350);

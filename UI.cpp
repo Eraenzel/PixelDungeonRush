@@ -34,6 +34,26 @@ void UI::draw(sf::RenderWindow& window, const Player& player) {
     window.draw(playerMarker);
     drawPlayerHealth(window, player);
 
+    if (bossMarkerWorldPos.has_value() && minimapSprite.has_value()) {
+
+        sf::CircleShape bossMarker(4.f);
+        bossMarker.setFillColor(sf::Color::Red);
+        bossMarker.setOrigin({ 4.f, 4.f });
+
+        sf::Vector2f minimapPos = minimapSprite->getPosition();
+
+        sf::Vector2f bossTilePos = {
+            bossMarkerWorldPos->x / TILE_SIZE,
+            bossMarkerWorldPos->y / TILE_SIZE
+        };
+
+        bossMarker.setPosition({
+            minimapPos.x + bossTilePos.x * MINIMAP_SCALE,
+            minimapPos.y + bossTilePos.y * MINIMAP_SCALE
+            });
+
+        window.draw(bossMarker);
+    }
 }
 
 void UI::regenerateMinimap() {
@@ -126,5 +146,14 @@ void UI::drawWinScreen(sf::RenderWindow& window, const sf::Font& font)
     window.draw(winText);
     window.draw(restartText);
 }
+
+void UI::setBossMarker(const sf::Vector2f& worldPos) {
+    bossMarkerWorldPos = worldPos;
+}
+
+void UI::clearBossMarker() {
+    bossMarkerWorldPos.reset();
+}
+
 
 

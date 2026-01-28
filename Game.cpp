@@ -1,5 +1,6 @@
 #include "Game.hpp"
 #include "Entity.hpp"
+#include <iostream>
 
 Game::Game()
     : window(sf::VideoMode({ 1280, 720 }), "Pixel Dungeon Rush"),
@@ -18,6 +19,16 @@ Game::Game()
     camera.zoom(0.4f);
 
     fontLoaded = font.openFromFile("assets/Kenney Future.ttf");
+    if (!fontLoaded) {
+        std::cerr << "Failed to load font\n";
+    }
+
+    enemyDropTable = {
+    { Pickup::Type::Heal,        60.f, 20.f, 0.f },
+    { Pickup::Type::DamageBoost, 25.f, 0.3f, 6.f },
+    { Pickup::Type::SpeedBoost,  15.f, 0.25f, 6.f }
+    };
+
 }
 
 void Game::run() {
@@ -67,6 +78,8 @@ void Game::restartGame()
 	enemiesDefeated = 0;
 	bossAlive = true;
 	bossSpawned = false;
+	attackCooldown.restart();
+    ui.clearBossMarker();
 }
 
 void Game::processEvents() {
@@ -127,8 +140,8 @@ void Game::update() {
     player.avoidEnemies(enemies); // pushing
 
     sf::Vector2f pos = player.getPosition();
-    int tileX = static_cast<int>(pos.x / TILE_SIZE);
-    int tileY = static_cast<int>(pos.y / TILE_SIZE);
+	int tileX = std::clamp(static_cast<int>(pos.x / TILE_SIZE), 0, MAP_WIDTH - 1);
+    int tileY = std::clamp(static_cast<int>(pos.y / TILE_SIZE), 0, MAP_HEIGHT - 1);
 
     dungeon.markVisible(tileX, tileY, VisionRadiusTiles);
     ui.markMinimapDirty();
@@ -143,9 +156,20 @@ void Game::update() {
 
         if (distSq < 20.f * 20.f) { // pickup radius
 
-            if (pit->type == Pickup::Type::Heal) {
+            switch (pit->type) {
+            case Pickup::Type::Heal:
                 player.setHealth(player.getHealth() + pit->value);
+                break;
+
+            case Pickup::Type::DamageBoost:
+                player.damageBoost = { pit->value, pit->duration };
+                break;
+
+            case Pickup::Type::SpeedBoost:
+                player.speedBoost = { pit->value, pit->duration };
+                break;
             }
+
 
             pit = pickups.erase(pit);
         }
@@ -163,6 +187,36 @@ void Game::update() {
     window.setView(camera);
 
 	handleInputDebug(dt);
+
+    for (auto it = damageNumbers.begin(); it != damageNumbers.end(); ) {
+        float t = it->lifetime.getElapsedTime().asSeconds();
+
+        if (t > 0.6f) {
+            it = damageNumbers.erase(it);
+            continue;
+        }
+
+        // Move
+        it->text.move(it->velocity * dt);
+
+        // Fade out
+        sf::Color c = it->text.getFillColor();
+        c.a = static_cast<std::uint8_t>(255.f * (1.f - t / 0.6f));
+        it->text.setFillColor(c);
+
+        ++it;
+    }
+
+    if (bossSpawned && bossAlive) {
+        for (const auto& enemy : enemies) {
+            if (enemy.isBoss) {
+                ui.setBossMarker(enemy.getCenter());
+                break;
+            }
+        }
+    }
+
+	player.updateBoosts(dt);
 }
 
 void Game::render() {
@@ -192,8 +246,19 @@ void Game::render() {
         attackEffect.reset(); // clear it
     }
 
+    for (const auto& dn : damageNumbers) {
+        window.draw(dn.text);
+    }
+
     window.setView(window.getDefaultView());
     ui.draw(window, player);
+
+    if (state == GameState::Dead) {
+        sf::RectangleShape overlay;
+        overlay.setSize(sf::Vector2f(window.getSize()));
+        overlay.setFillColor(sf::Color(0, 0, 0, 180));
+        window.draw(overlay);
+    }
 
     if (state == GameState::Dead && fontLoaded && player.getHealth() <= 0) {
 		ui.drawDeathScreen(window, font);      
@@ -226,7 +291,16 @@ void Game::handlePlayerAttack() {
         float distSq = dx * dx + dy * dy;
 
         if (distSq <= AttackRadius * AttackRadius) {
-            enemy.takeDamage(40.f);  // Deal damage
+			float Playerdamage = rollDamage(35.f, 45.f);
+            if (player.damageBoost)
+                Playerdamage *= (1.f + player.damageBoost->value);
+            enemy.takeDamage(Playerdamage);  // Deal damage
+
+            spawnDamageNumber(
+                enemy.getCenter(),
+                Playerdamage,
+                enemy.isBoss ? sf::Color(255, 120, 120) : sf::Color::White
+            );
         }
     }
 
@@ -240,13 +314,11 @@ void Game::handlePlayerAttack() {
             if (it->isBoss) {
                 bossKilledThisFrame = true;
 			}
-            // Spawn heal pickup at enemy center
-            pickups.emplace_back(
-                it->getCenter(),
-                Pickup::Type::Heal,
-                20.f
-            );
-
+            // Spawn pickup at enemy center           
+            if (std::uniform_real_distribution<float>(0.f, 1.f)(rng) <= PickupSpawnChance) {
+                spawnPickup(it->getCenter());
+            }
+          
             it = enemies.erase(it);
             enemiesDefeated++;
         }
@@ -309,13 +381,21 @@ void Game::handleEnemyAttacks(std::vector<Entity*>& blockers, float dt)
 
             if (enemy.isWindingUp() && enemy.windupTimer.getElapsedTime() >= Enemy::AttackWindupTime)
             {
-                //player.takeDamage(EnemyContactDPS * dt);  
-                player.takeDamage(Enemy::AttackDamage);
+                //player.takeDamage(EnemyContactDPS * dt); 
+                float enemyDmg = rollDamage(Enemy::AttackDamageMax, Enemy::AttackDamageMin);
+                player.takeDamage(enemyDmg);
+                
+                spawnDamageNumber(
+                    player.getCenter(),
+                    enemyDmg,
+                    sf::Color(255, 80, 80)
+                );
 
                 attackEffect.emplace(Enemy::AttackRange);
                 attackEffect->setOrigin(sf::Vector2f{ AttackRadius, AttackRadius });
                 attackEffect->setPosition(enemy.getCenter());
-                attackEffect->setFillColor(sf::Color(255, 80, 80, 120));
+                int alpha = static_cast<int>(std::clamp(enemyDmg * 10.f, 80.f, 160.f));
+                attackEffect->setFillColor(sf::Color(255, 80, 80, alpha));
                 attackEffectTimer.restart();
 
                 enemy.finishAttack();
@@ -334,24 +414,38 @@ bool Game::canAttack() const {
 
 void Game::spawnBoss()
 {
-    /*const auto& rooms = dungeon.getRooms();
-    if (rooms.empty()) return;
-
-    const Room& bossRoom = rooms.back();
-
-    sf::Vector2f bossPos(
-        bossRoom.centerX() * TILE_SIZE,
-        bossRoom.centerY() * TILE_SIZE
-    );*/
-
     std::vector<sf::Vector2f> floorTiles = dungeon.getFloorTiles();
     if (floorTiles.empty())
         return;
 
     sf::Vector2f playerPos = player.getPosition();
 
+    auto hasClearance = [&](int tx, int ty) {
+        for (int dy = -1; dy <= 1; ++dy) {
+            for (int dx = -1; dx <= 1; ++dx) {
+                int nx = tx + dx;
+                int ny = ty + dy;
+
+                if (nx < 0 || ny < 0 || nx >= MAP_WIDTH || ny >= MAP_HEIGHT)
+                    return false;
+
+                if (!dungeon.isFloor(nx, ny))
+                    return false;
+            }
+        }
+        return true;
+        };
+
+
     std::vector<sf::Vector2f> candidates;
     for (const auto& tilePos : floorTiles) {
+
+        int tx = static_cast<int>(tilePos.x / TILE_SIZE);
+        int ty = static_cast<int>(tilePos.y / TILE_SIZE);
+
+        if (!hasClearance(tx, ty))
+            continue;
+
         sf::Vector2f delta = tilePos - playerPos;
         float distSq = delta.x * delta.x + delta.y * delta.y;
 
@@ -361,9 +455,16 @@ void Game::spawnBoss()
         }
     }
 
+
     // Fallback: if no tile fits, relax the constraint
     if (candidates.empty()) {
-        candidates = floorTiles;
+        for (const auto& tilePos : floorTiles) {
+            int tx = static_cast<int>(tilePos.x / TILE_SIZE);
+            int ty = static_cast<int>(tilePos.y / TILE_SIZE);
+            if (hasClearance(tx, ty)) {
+                candidates.push_back(tilePos);
+            }
+        }
     }
 
     std::uniform_int_distribution<std::size_t> dist(0, candidates.size() - 1);
@@ -371,11 +472,63 @@ void Game::spawnBoss()
 
     enemies.emplace_back(bossPos, dungeon);
     enemies.back().makeBoss();
+    ui.setBossMarker(bossPos);
 }
 
 void Game::endRun() {
     state = GameState::Dead;
     bossAlive = false; // reuse Dead for now
+    damageNumbers.clear();
+    pickups.clear();
+    attackEffect.reset();
+    ui.clearBossMarker();
+}
+
+float Game::rollDamage(float min, float max)
+{
+    std::uniform_real_distribution<float> dist(min, max);
+    return dist(rng);
+}
+
+void Game::spawnDamageNumber(const sf::Vector2f& worldPos, float value, const sf::Color& color)
+{
+    if (!fontLoaded) return;
+
+    damageNumbers.emplace_back(
+        font,
+        worldPos,
+        static_cast<int>(value),
+        color
+    );
+}
+
+void Game::spawnPickup(const sf::Vector2f& pos)
+{
+    if (enemyDropTable.empty())
+        return;
+
+    float totalWeight = 0.f;
+    for (const auto& e : enemyDropTable)
+        totalWeight += e.chance;
+
+    std::uniform_real_distribution<float> dist(0.f, totalWeight);
+    float roll = dist(rng);
+
+    float accum = 0.f;
+    for (const auto& e : enemyDropTable) {
+        accum += e.chance;
+        if (roll <= accum) {
+
+            pickups.emplace_back(
+                pos,
+                e.type,
+                e.value,
+                e.duration
+            );
+
+            return;
+        }
+    }
 }
 
 

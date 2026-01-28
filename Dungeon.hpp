@@ -37,6 +37,7 @@ public:
     bool lineOfSightClear(const sf::Vector2f& from, const sf::Vector2f& to) const;
     std::array<std::array<bool, MAP_WIDTH>, MAP_HEIGHT> currentlyVisible;
     bool isTileCurrentlyVisible(int x, int y) const;
+    bool isFloor(int x, int y) const;
 
 private:
     MapArray map;

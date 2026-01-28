@@ -9,23 +9,78 @@
 
 struct Pickup {
     enum class Type {
-        Heal
+        Heal,
+        DamageBoost,
+        SpeedBoost
     };
 
     sf::Vector2f position;
     Type type;
     float value; // heal amount
+	float duration; // for buffs
 
     sf::CircleShape shape;
 
-    Pickup(sf::Vector2f pos, Type t, float v)
-        : position(pos), type(t), value(v), shape(8.f) {
+    Pickup(sf::Vector2f pos, Type t, float v, float d)
+        : position(pos), type(t), value(v), duration(d), shape(8.f) {
 
         shape.setOrigin({ 8.f, 8.f });
         shape.setPosition(position);
-        shape.setFillColor(sf::Color(80, 255, 80));
+
+        /*switch (type) {
+        case Pickup::Type::Heal:        shape.setFillColor(sf::Color::Green); break;
+        case Pickup::Type::DamageBoost: shape.setFillColor(sf::Color::Red);   break;
+        case Pickup::Type::SpeedBoost:  shape.setFillColor(sf::Color::Cyan);  break;
+        }*/
+
+        switch (type) {
+        case Type::Heal:
+            shape.setFillColor(sf::Color(80, 255, 80)); // green
+            break;
+
+        case Type::DamageBoost:
+            shape.setFillColor(sf::Color(255, 80, 80)); // red
+            break;
+
+        case Type::SpeedBoost:
+            shape.setFillColor(sf::Color(80, 200, 255)); // cyan
+            break;
+        }
+
     }
 };
+
+struct DropEntry {
+    Pickup::Type type;
+    float chance;   // relative weight
+    float value;
+    float duration;
+
+
+};
+
+struct DamageNumber {
+    sf::Text text;
+    sf::Vector2f velocity;
+    sf::Clock lifetime;
+
+    DamageNumber(
+        const sf::Font& font,
+        const sf::Vector2f& worldPos,
+        int value,
+        const sf::Color& color
+    )
+        : text(font, std::to_string(value), 18),
+        velocity(0.f, -30.f)
+    {
+        text.setFillColor(color);
+        text.setOutlineColor(sf::Color::Black);
+        text.setOutlineThickness(1.f);
+        text.setPosition(worldPos);
+        lifetime.restart();
+    }
+};
+
 
 class Game {
 public:
@@ -49,6 +104,9 @@ private:
     std::mt19937 rng;
 	sf::Clock frameClock;
     std::vector<Pickup> pickups;
+    std::vector<DamageNumber> damageNumbers;
+    std::vector<DropEntry> enemyDropTable;
+
 
 
     Player player;
@@ -65,7 +123,7 @@ private:
 
     // Game constants
     static constexpr float AttackRadius = 40.f;
-    static constexpr int   EnemiesPerRoom = 10;
+    static constexpr int EnemiesPerRoom = 10;
     static constexpr float EnemyContactDPS = 30.f;
     static constexpr int AttackCooldownMs = 500;
 	static constexpr int VisionRadiusTiles = 5;
@@ -74,6 +132,7 @@ private:
 	bool bossSpawned = false;
     static constexpr float BossMinSpawnDist = 6.f * TILE_SIZE;
     static constexpr float BossMaxSpawnDist = 12.f * TILE_SIZE;
+	static constexpr float PickupSpawnChance = 0.6f; // 60% chance to drop a pickup
 
     //static constexpr sf::Time AttackCooldown = sf::milliseconds(500);
     
@@ -87,5 +146,13 @@ private:
     void handleInputDebug(float dt);
 	void spawnBoss();
 	void endRun();
+	float rollDamage(float min, float max);
+    void spawnDamageNumber(
+        const sf::Vector2f& worldPos,
+        float value,
+        const sf::Color& color
+    );
+	void spawnPickup(const sf::Vector2f& pos);
+
 
 };

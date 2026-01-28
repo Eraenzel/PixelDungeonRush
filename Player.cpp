@@ -46,5 +46,20 @@ void Player::avoidEnemies(const std::vector<Enemy>& enemies) {
         }
     }
 }
+void Player::updateBoosts(float dt) {
+    if (damageBoost) {
+        damageBoost->remaining -= dt;
+        if (damageBoost->remaining <= 0.f)
+            damageBoost.reset();
+    }
+
+    if (speedBoost) {
+        speedBoost->remaining -= dt;
+        if (speedBoost->remaining <= 0.f)
+            speedBoost.reset();
+    }
+}
+
+
 
 
