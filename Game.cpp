@@ -222,6 +222,11 @@ void Game::update() {
         }
     }
 
+    if (fontLoaded && player.getHealth() <= 0 && !runEnded) {
+        runEnded = true;
+        endRun();
+    }
+
     if (player.isDead()) {
         state = GameState::Dead;
         return;
@@ -303,12 +308,6 @@ void Game::render() {
         overlay.setSize(sf::Vector2f(window.getSize()));
         overlay.setFillColor(sf::Color(0, 0, 0, 180));
         window.draw(overlay);
-    }
-
-    if (state == GameState::Dead && fontLoaded && player.getHealth() <= 0 && !runEnded) {
-		ui.drawDeathScreen(window, font); 
-		runEnded = true;
-		endRun();
     }
 
     if (state == GameState::Dead && fontLoaded && player.getHealth() <= 0) {
@@ -464,7 +463,7 @@ void Game::handleEnemyAttacks(std::vector<Entity*>& blockers, float dt)
                 );
 
                 attackEffect.emplace(Enemy::AttackRange);
-                attackEffect->setOrigin(sf::Vector2f{ AttackRadius, AttackRadius });
+                attackEffect->setOrigin(sf::Vector2f{ Enemy::AttackRange, Enemy::AttackRange });
                 attackEffect->setPosition(enemy.getCenter());
                 int alpha = static_cast<int>(std::clamp(enemyDmg * 10.f, 80.f, 160.f));
                 attackEffect->setFillColor(sf::Color(255, 80, 80, alpha));

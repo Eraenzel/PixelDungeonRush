@@ -13,16 +13,16 @@ LootSystem::LootSystem(std::mt19937& rng)
     eliteTable = {
         0.75f,
         {
-            { Pickup::Type::Heal, 30.f, 1.0f },
-            { Pickup::Type::DamageBoost, 10.f, 0.5f }
+            { Pickup::Type::Heal, 1.f, 30.f, 1.0f },
+            { Pickup::Type::DamageBoost, 1.f, 10.f, 0.5f }
         }
     };
 
     bossTable = {
         1.0f,
         {
-            { Pickup::Type::Heal, 50.f, 1.0f },
-            { Pickup::Type::DamageBoost, 20.f, 1.0f }
+            { Pickup::Type::Heal, 1.f, 50.f, 1.0f },
+            { Pickup::Type::DamageBoost, 1.f, 20.f, 1.0f }
         }
     };
 }
