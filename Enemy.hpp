@@ -1,6 +1,7 @@
 #pragma once
 #include "Entity.hpp"
 #include "Dungeon.hpp"
+#include "Loot.hpp"
 
 class Enemy : public Entity {
 public:
@@ -15,7 +16,7 @@ public:
     void cancelWindup();
 	void finishAttack();
 	void updateCooldown();
-    bool isBoss = false;
+    //bool isBoss = false;
     void makeBoss();
 
     enum class AttackState {
@@ -32,7 +33,13 @@ public:
     sf::Clock attackCooldown;
     sf::Clock windupTimer;
     static constexpr sf::Time AttackWindupTime = sf::milliseconds(350);
-    static constexpr sf::Time AttackCooldownTime = sf::milliseconds(1200);
+    static constexpr sf::Time AttackCooldownTime = sf::milliseconds(900);
+
+    EnemyRarity rarity = EnemyRarity::Common;
+
+    bool isElite() const { return rarity == EnemyRarity::Elite; }
+    bool isBoss()  const { return rarity == EnemyRarity::Boss; }
+
 
 private:
     const Dungeon* dungeonRef = nullptr;

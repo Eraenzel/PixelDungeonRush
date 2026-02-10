@@ -1,0 +1,6 @@
+Floor: 3 | Enemies: 8
+Floor: 1 | Enemies: 1
+Floor: 1 | Enemies: 1
+Floor: 6 | Enemies: 22
+Floor: 4 | Enemies: 25
+Floor: 5 | Enemies: 32

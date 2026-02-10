@@ -17,6 +17,7 @@ public:
     void clearBossMarker();
     void drawFloorCounter(sf::RenderWindow& window, int floor, const sf::Font& font);
 	void drawEnemyCounter(sf::RenderWindow& window, int toKillThisFloor, int killedOverall, const sf::Font& font);
+	void drawAdvanceFloor(sf::RenderWindow& window, const sf::Font& font);
 
 
 private:

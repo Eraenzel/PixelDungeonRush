@@ -6,58 +6,7 @@
 #include "Dungeon.hpp"
 #include "UI.hpp"
 #include <random>
-
-struct Pickup {
-    enum class Type {
-        Heal,
-        DamageBoost,
-        SpeedBoost
-    };
-
-    sf::Vector2f position;
-    Type type;
-    float value; // heal amount
-	float duration; // for buffs
-
-    sf::CircleShape shape;
-
-    Pickup(sf::Vector2f pos, Type t, float v, float d)
-        : position(pos), type(t), value(v), duration(d), shape(8.f) {
-
-        shape.setOrigin({ 8.f, 8.f });
-        shape.setPosition(position);
-
-        /*switch (type) {
-        case Pickup::Type::Heal:        shape.setFillColor(sf::Color::Green); break;
-        case Pickup::Type::DamageBoost: shape.setFillColor(sf::Color::Red);   break;
-        case Pickup::Type::SpeedBoost:  shape.setFillColor(sf::Color::Cyan);  break;
-        }*/
-
-        switch (type) {
-        case Type::Heal:
-            shape.setFillColor(sf::Color(80, 255, 80)); // green
-            break;
-
-        case Type::DamageBoost:
-            shape.setFillColor(sf::Color(255, 80, 80)); // red
-            break;
-
-        case Type::SpeedBoost:
-            shape.setFillColor(sf::Color(80, 200, 255)); // cyan
-            break;
-        }
-
-    }
-};
-
-struct DropEntry {
-    Pickup::Type type;
-    float chance;   // relative weight
-    float value;
-    float duration;
-
-
-};
+#include "Loot.hpp"
 
 struct DamageNumber {
     sf::Text text;
@@ -112,13 +61,14 @@ private:
     Player player;
     Dungeon dungeon;
     UI ui;
+	LootSystem loot;
 	bool bossAlive = true;
 	int enemiesDefeated = 0;
     int floorNumber = 1;
     int enemiesKilledThisFloor = 0;
     int enemiesToClear = 0;
     int enemiesToClearThisFloor = 0;
-	int enemiesToSpawn = 5 + floorNumber * 2; // increase enemies per floor
+	int enemiesToSpawn = 5; 
 
     sf::Clock attackCooldown;
     bool canAttack() const;
@@ -133,8 +83,9 @@ private:
     static constexpr int AttackCooldownMs = 500;
 	static constexpr int VisionRadiusTiles = 5;
     sf::Time AttackEffectDuration = sf::milliseconds(100);
-	static constexpr float BossSpawnThreshold = 1; // enemies defeated before boss spawns
+	static constexpr float BossSpawnThreshold = 10; // enemies defeated before boss spawns
 	bool bossSpawned = false;
+	bool runEnded = false;
     static constexpr float BossMinSpawnDist = 6.f * TILE_SIZE;
     static constexpr float BossMaxSpawnDist = 12.f * TILE_SIZE;
 	static constexpr float PickupSpawnChance = 0.9f; // X% chance to drop a pickup
@@ -161,6 +112,7 @@ private:
 	void spawnPickup(const sf::Vector2f& pos);
     void startFloor();
     void advanceFloor();
+	void saveRunStats();
 
 
 };

@@ -186,6 +186,17 @@ void UI::drawEnemyCounter(sf::RenderWindow& window, int toKillThisFloor, int kil
     window.draw(text1);
 }
 
+void UI::drawAdvanceFloor(sf::RenderWindow& window, const sf::Font& font)
+{
+    sf::Text text(font, "Press T to advance to next floor!", 18);
+    sf::FloatRect bounds = text.getGlobalBounds();
+    text.setFillColor(sf::Color::Green);
+    text.setPosition(sf::Vector2f{
+        (window.getSize().x - bounds.size.x) * 0.5f,
+        700.f });
+    window.draw(text);
+}
+
 
 
 

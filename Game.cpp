@@ -1,13 +1,15 @@
 #include "Game.hpp"
 #include "Entity.hpp"
 #include <iostream>
+#include <fstream>
 
 Game::Game()
     : window(sf::VideoMode({ 1280, 720 }), "Pixel Dungeon Rush"),
     dungeon(),
     player(dungeon),
     ui(dungeon),
-	rng(std::mt19937(std::random_device{}()))
+	rng(std::mt19937(std::random_device{}())),
+	loot(rng)
 {
     ui.regenerateMinimap();
     window.setFramerateLimit(60);
@@ -71,6 +73,7 @@ void Game::restartGame()
     state = GameState::Playing;
 	enemiesDefeated = 0;
 	bossAlive = true;
+	runEnded = false;
 	bossSpawned = false;
 	attackCooldown.restart();
     ui.clearBossMarker();
@@ -90,7 +93,7 @@ void Game::startFloor() {
     spawnEnemies();
 
     enemiesKilledThisFloor = 0;
-    enemiesToClear = static_cast<int>(enemies.size() * 0.7f); // 70%
+    enemiesToClear = static_cast<int>(enemiesToSpawn * 0.6f); // 60%
 	enemiesToClearThisFloor = enemiesToClear;
 
     ui.markMinimapDirty();
@@ -98,8 +101,23 @@ void Game::startFloor() {
 
 void Game::advanceFloor() {
     floorNumber++;
-	player.setHealth(player.getHealth() + 20.f); // heal some on floor advance
+    enemiesToSpawn += floorNumber + 2;
+	player.setHealth(player.getHealth() + 10.f); // heal some on floor advance
     startFloor();
+}
+
+void Game::saveRunStats()
+{
+    std::ofstream file("runs.txt", std::ios::app);
+    if (!file.is_open())
+        return;
+
+    file << "Floor: " << floorNumber
+        << " | Enemies: " << enemiesDefeated
+        << "\n";
+
+    file.close();
+    
 }
 
 void Game::processEvents() {
@@ -128,6 +146,12 @@ void Game::processEvents() {
                     if (state == GameState::Playing && canAttack())
 						handlePlayerAttack();
 					break;
+
+                case sf::Keyboard::Key::T:
+                    if (state == GameState::Playing && enemiesKilledThisFloor >= enemiesToClear) {
+                        advanceFloor();
+                    }
+                    break;
 
                 default:
 					break;
@@ -229,7 +253,7 @@ void Game::update() {
 
     if (bossSpawned && bossAlive) {
         for (const auto& enemy : enemies) {
-            if (enemy.isBoss) {
+            if (enemy.isBoss()) {
                 ui.setBossMarker(enemy.getCenter());
                 break;
             }
@@ -237,11 +261,6 @@ void Game::update() {
     }
 
 	player.updateBoosts(dt);
-
-    if (enemiesKilledThisFloor >= enemiesToClear) {
-        advanceFloor();
-        return;
-    }
 }
 
 void Game::render() {
@@ -286,12 +305,23 @@ void Game::render() {
         window.draw(overlay);
     }
 
-    if (state == GameState::Dead && fontLoaded && player.getHealth() <= 0) {
-		ui.drawDeathScreen(window, font);      
+    if (state == GameState::Dead && fontLoaded && player.getHealth() <= 0 && !runEnded) {
+		ui.drawDeathScreen(window, font); 
+		runEnded = true;
+		endRun();
     }
 
-    if (state == GameState::Dead && fontLoaded && !bossAlive) {
-        ui.drawWinScreen(window, font);
+    if (state == GameState::Dead && fontLoaded && player.getHealth() <= 0) {
+        ui.drawDeathScreen(window, font);
+    }
+
+    if (fontLoaded && !bossAlive) {
+        ui.clearBossMarker();
+        //ui.drawWinScreen(window, font);
+    }
+
+    if (state == GameState::Playing && enemiesKilledThisFloor >= enemiesToClear) {
+		ui.drawAdvanceFloor(window, font);
     }
 
     ui.drawFloorCounter(window, floorNumber, font);
@@ -328,7 +358,7 @@ void Game::handlePlayerAttack() {
             spawnDamageNumber(
                 enemy.getCenter(),
                 Playerdamage,
-                enemy.isBoss ? sf::Color(255, 120, 120) : sf::Color::White
+                enemy.isBoss() ? sf::Color(255, 120, 120) : sf::Color::White
             );
         }
     }
@@ -340,13 +370,22 @@ void Game::handlePlayerAttack() {
     while (it != enemies.end()) {
         if (it->isDead()) {
 
-            if (it->isBoss) {
+            if (it->isBoss()) {
                 bossKilledThisFrame = true;
 			}
             // Spawn pickup at enemy center           
-            if (std::uniform_real_distribution<float>(0.f, 1.f)(rng) <= PickupSpawnChance) {
-                spawnPickup(it->getCenter());
-            }
+            //if (std::uniform_real_distribution<float>(0.f, 1.f)(rng) <= PickupSpawnChance) {
+                //spawnPickup(it->getCenter());
+            //}
+            auto drops = loot.rollDrops(it->rarity, it->getCenter());
+            for (auto& p : drops)
+                pickups.emplace_back(
+                    it->getCenter(),
+                    p.type,
+                    p.value,
+                    p.duration
+                );
+
           
             it = enemies.erase(it);
             enemiesDefeated++;
@@ -358,14 +397,15 @@ void Game::handlePlayerAttack() {
         }
     }
 
-    /*if (!bossSpawned && enemiesDefeated >= BossSpawnThreshold) {
+    if (!bossSpawned && enemiesDefeated >= BossSpawnThreshold) {
         spawnBoss();
         bossSpawned = true;
         bossAlive = true;
-    }*/
+    }
 
     if (bossKilledThisFrame) {
-        endRun();
+        //endRun();
+        bossAlive = false;
         return;
     }
 
@@ -414,7 +454,7 @@ void Game::handleEnemyAttacks(std::vector<Entity*>& blockers, float dt)
             {
                 //player.takeDamage(EnemyContactDPS * dt); 
                 float enemyDmg = rollDamage(Enemy::AttackDamageMax, Enemy::AttackDamageMin);
-				enemyDmg += (floorNumber -1) * 2.f; // scale with floor
+				enemyDmg += (floorNumber - 1) * 2.f; // scale with floor
                 player.takeDamage(enemyDmg);
                 
                 spawnDamageNumber(
@@ -514,6 +554,7 @@ void Game::endRun() {
     pickups.clear();
     attackEffect.reset();
     ui.clearBossMarker();
+    saveRunStats();
 }
 
 float Game::rollDamage(float min, float max)

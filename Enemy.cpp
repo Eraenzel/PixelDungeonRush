@@ -17,7 +17,7 @@ void Enemy::update(const sf::Vector2f& playerPos, const std::vector<Entity*>& bl
     }
     else shape.setFillColor(sf::Color::Red);
 
-    if (isBoss && attackState == AttackState::Idle) {
+    if (isBoss() && attackState == AttackState::Idle) {
         shape.setOutlineThickness(2.f);
         shape.setOutlineColor(sf::Color::Magenta);
     }
@@ -107,7 +107,7 @@ void Enemy::updateCooldown() {
 
 void Enemy::makeBoss()
 {
-    isBoss = true;
+	this->rarity = EnemyRarity::Boss;
     maxHealth = 300.f;
     currentHealth = maxHealth;
     speed *= 0.6f;
