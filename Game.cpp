@@ -58,7 +58,7 @@ void Game::spawnEnemies()
 
     std::shuffle(filtered.begin(), filtered.end(), rng);
 
-    for (int i = 0; i < EnemiesPerRoom && i < filtered.size(); ++i) {
+    for (int i = 0; i < enemiesToSpawn && i < filtered.size(); ++i) {
         enemies.emplace_back(filtered[i], dungeon); // or however your constructor works
     }
 
@@ -66,12 +66,6 @@ void Game::spawnEnemies()
 
 void Game::restartGame()
 {
-    dungeon.generate();
-    dungeon.clearDiscovery();
-    player.setPosition(dungeon.findSpawnPoint());
-    ui.markMinimapDirty();
-    enemies.clear();
-    spawnEnemies();
 	//spawnBoss();
     player.setHealth(100.f);
     state = GameState::Playing;
@@ -80,6 +74,32 @@ void Game::restartGame()
 	bossSpawned = false;
 	attackCooldown.restart();
     ui.clearBossMarker();
+    floorNumber = 1;
+    startFloor();
+}
+
+void Game::startFloor() {
+    dungeon.generate();
+    dungeon.clearDiscovery();
+
+    player.setPosition(dungeon.findSpawnPoint());
+
+    enemies.clear();
+    pickups.clear();
+
+    spawnEnemies();
+
+    enemiesKilledThisFloor = 0;
+    enemiesToClear = static_cast<int>(enemies.size() * 0.7f); // 70%
+	enemiesToClearThisFloor = enemiesToClear;
+
+    ui.markMinimapDirty();
+}
+
+void Game::advanceFloor() {
+    floorNumber++;
+	player.setHealth(player.getHealth() + 20.f); // heal some on floor advance
+    startFloor();
 }
 
 void Game::processEvents() {
@@ -217,12 +237,18 @@ void Game::update() {
     }
 
 	player.updateBoosts(dt);
+
+    if (enemiesKilledThisFloor >= enemiesToClear) {
+        advanceFloor();
+        return;
+    }
 }
 
 void Game::render() {
     window.clear(sf::Color::Black);
     dungeon.draw(window);
     player.draw(window);
+
     for (const auto& enemy : enemies) {
 
         sf::Vector2f pos = enemy.getPosition();
@@ -267,7 +293,10 @@ void Game::render() {
     if (state == GameState::Dead && fontLoaded && !bossAlive) {
         ui.drawWinScreen(window, font);
     }
-        window.display();
+
+    ui.drawFloorCounter(window, floorNumber, font);
+	ui.drawEnemyCounter(window, enemiesToClearThisFloor, enemiesDefeated, font);
+    window.display();
 }
 
 void Game::handlePlayerAttack() {
@@ -321,17 +350,19 @@ void Game::handlePlayerAttack() {
           
             it = enemies.erase(it);
             enemiesDefeated++;
+            enemiesKilledThisFloor++;
+            enemiesToClearThisFloor--;
         }
         else {
             ++it;
         }
     }
 
-    if (!bossSpawned && enemiesDefeated >= BossSpawnThreshold) {
+    /*if (!bossSpawned && enemiesDefeated >= BossSpawnThreshold) {
         spawnBoss();
         bossSpawned = true;
         bossAlive = true;
-    }
+    }*/
 
     if (bossKilledThisFrame) {
         endRun();
@@ -383,6 +414,7 @@ void Game::handleEnemyAttacks(std::vector<Entity*>& blockers, float dt)
             {
                 //player.takeDamage(EnemyContactDPS * dt); 
                 float enemyDmg = rollDamage(Enemy::AttackDamageMax, Enemy::AttackDamageMin);
+				enemyDmg += (floorNumber -1) * 2.f; // scale with floor
                 player.takeDamage(enemyDmg);
                 
                 spawnDamageNumber(

@@ -114,6 +114,11 @@ private:
     UI ui;
 	bool bossAlive = true;
 	int enemiesDefeated = 0;
+    int floorNumber = 1;
+    int enemiesKilledThisFloor = 0;
+    int enemiesToClear = 0;
+    int enemiesToClearThisFloor = 0;
+	int enemiesToSpawn = 5 + floorNumber * 2; // increase enemies per floor
 
     sf::Clock attackCooldown;
     bool canAttack() const;
@@ -132,7 +137,8 @@ private:
 	bool bossSpawned = false;
     static constexpr float BossMinSpawnDist = 6.f * TILE_SIZE;
     static constexpr float BossMaxSpawnDist = 12.f * TILE_SIZE;
-	static constexpr float PickupSpawnChance = 0.6f; // 60% chance to drop a pickup
+	static constexpr float PickupSpawnChance = 0.9f; // X% chance to drop a pickup
+
 
     //static constexpr sf::Time AttackCooldown = sf::milliseconds(500);
     
@@ -153,6 +159,8 @@ private:
         const sf::Color& color
     );
 	void spawnPickup(const sf::Vector2f& pos);
+    void startFloor();
+    void advanceFloor();
 
 
 };

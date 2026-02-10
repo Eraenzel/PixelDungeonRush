@@ -155,5 +155,37 @@ void UI::clearBossMarker() {
     bossMarkerWorldPos.reset();
 }
 
+void UI::drawFloorCounter(sf::RenderWindow& window, int floor, const sf::Font& font) {
+    sf::Text text(font, "Floor " + std::to_string(floor), 18);
+    sf::FloatRect bounds = text.getGlobalBounds();
+    text.setFillColor(sf::Color::White);
+    text.setPosition(sf::Vector2f{
+        (window.getSize().x - bounds.size.x) * 0.5f,
+        8.f });
+
+    window.draw(text);
+}
+
+void UI::drawEnemyCounter(sf::RenderWindow& window, int toKillThisFloor, int killedOverall, const sf::Font& font)
+{
+    sf::Text text(font, "Enemies to kill: " + std::to_string(toKillThisFloor), 18);
+    sf::FloatRect bounds = text.getGlobalBounds();
+    text.setFillColor(sf::Color::White);
+    text.setPosition(sf::Vector2f{
+        (window.getSize().x - bounds.size.x) * 0.35f,
+        40.f });
+
+    sf::Text text1(font, "Enemies killed: " + std::to_string(killedOverall), 18);
+    sf::FloatRect bounds1 = text1.getGlobalBounds();
+    text1.setFillColor(sf::Color::White);
+    text1.setPosition(sf::Vector2f{
+        (window.getSize().x - bounds1.size.x) * 0.35f,
+        24.f });
+
+    window.draw(text);
+    window.draw(text1);
+}
+
+
 
 
