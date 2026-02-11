@@ -78,6 +78,7 @@ void Game::restartGame()
 	attackCooldown.restart();
     ui.clearBossMarker();
     floorNumber = 1;
+	enemiesToSpawn = 5;
     startFloor();
 }
 
@@ -198,7 +199,7 @@ void Game::update() {
         sf::Vector2f delta = pit->position - player.getCenter();
         float distSq = delta.x * delta.x + delta.y * delta.y;
 
-        if (distSq < 20.f * 20.f) { // pickup radius
+        if (distSq < pickupRadius) { // pickup radius
 
             switch (pit->type) {
             case Pickup::Type::Heal:
@@ -266,6 +267,13 @@ void Game::update() {
     }
 
 	player.updateBoosts(dt);
+
+    if (player.speedBoost) {
+        player.setSpeed(140.f + player.speedBoost->value);
+    }
+    else {
+        player.setSpeed(140.f);
+	}
 }
 
 void Game::render() {
@@ -351,7 +359,7 @@ void Game::handlePlayerAttack() {
         if (distSq <= AttackRadius * AttackRadius) {
 			float Playerdamage = rollDamage(35.f, 45.f);
             if (player.damageBoost)
-                Playerdamage *= (1.f + player.damageBoost->value);
+                Playerdamage += player.damageBoost->value;
             enemy.takeDamage(Playerdamage);  // Deal damage
 
             spawnDamageNumber(
@@ -376,27 +384,43 @@ void Game::handlePlayerAttack() {
             //if (std::uniform_real_distribution<float>(0.f, 1.f)(rng) <= PickupSpawnChance) {
                 //spawnPickup(it->getCenter());
             //}
+
             auto drops = loot.rollDrops(it->rarity, it->getCenter());
+
+            std::uniform_real_distribution<float> angleDist(0.f, 2.f * 3.1415926f);
+            std::uniform_real_distribution<float> radiusDist(5.f, 18.f); // tweak range 12.f, 28.f
+
             for (auto& p : drops)
+            {              
+                float angle = angleDist(rng);
+                float radius = radiusDist(rng);
+
+                sf::Vector2f offset(
+                    std::cos(angle) * radius,
+                    std::sin(angle) * radius
+                );
+
                 pickups.emplace_back(
-                    it->getCenter(),
+                    it->getCenter() + offset,
                     p.type,
                     p.value,
                     p.duration
                 );
+            }
 
           
             it = enemies.erase(it);
             enemiesDefeated++;
             enemiesKilledThisFloor++;
-            enemiesToClearThisFloor--;
+            if (enemiesToClearThisFloor > 0)
+                enemiesToClearThisFloor--;
         }
         else {
             ++it;
         }
     }
 
-    if (!bossSpawned && enemiesDefeated >= BossSpawnThreshold) {
+    if (!bossSpawned && enemiesKilledThisFloor >= BossSpawnThreshold  && floorNumber % BossFloorInterval == 0) {
         spawnBoss();
         bossSpawned = true;
         bossAlive = true;

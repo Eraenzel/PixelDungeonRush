@@ -28,6 +28,8 @@ struct Pickup {
 
         shape.setOrigin({ 8.f, 8.f });
         shape.setPosition(position);
+        shape.setOutlineThickness(1.f);
+		shape.getOutlineColor() = sf::Color::Black;
 
         /*switch (type) {
         case Pickup::Type::Heal:        shape.setFillColor(sf::Color::Green); break;
@@ -61,6 +63,8 @@ struct DropEntry {
 
 struct DropTable {
     float dropChance;              // 0–1, overall chance to drop anything
+	int minRolls;                  // minimum number of rolls if dropping
+	int maxRolls;                  // maximum number of rolls if dropping
     std::vector<DropEntry> entries;
 };
 

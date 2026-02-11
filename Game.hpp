@@ -83,12 +83,14 @@ private:
     static constexpr int AttackCooldownMs = 500;
 	static constexpr int VisionRadiusTiles = 5;
     sf::Time AttackEffectDuration = sf::milliseconds(100);
-	static constexpr float BossSpawnThreshold = 10; // enemies defeated before boss spawns
+	static constexpr float BossSpawnThreshold = 7; // enemies defeated before boss spawns
+	static constexpr int BossFloorInterval = 5; // spawn boss every X floors
 	bool bossSpawned = false;
 	bool runEnded = false;
     static constexpr float BossMinSpawnDist = 6.f * TILE_SIZE;
     static constexpr float BossMaxSpawnDist = 12.f * TILE_SIZE;
 	static constexpr float PickupSpawnChance = 0.9f; // X% chance to drop a pickup
+	float pickupRadius = 1000.f; 
 
 
     //static constexpr sf::Time AttackCooldown = sf::milliseconds(500);
