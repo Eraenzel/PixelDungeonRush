@@ -5,3 +5,6 @@ Floor: 6 | Enemies: 22
 Floor: 4 | Enemies: 25
 Floor: 5 | Enemies: 32
 Floor: 6 | Enemies: 53
+Floor: 2 | Enemies: 3
+Floor: 2 | Enemies: 5
+Floor: 7 | Enemies: 63

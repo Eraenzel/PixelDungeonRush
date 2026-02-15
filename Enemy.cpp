@@ -31,13 +31,46 @@ void Enemy::update(const sf::Vector2f& playerPos, const std::vector<Entity*>& bl
         direction /= distance; // Normalize
         sf::Vector2f movement = direction * speed * dt;
 
-        sf::FloatRect nextBounds = shape.getGlobalBounds();        
-        nextBounds.position += movement;
+        if (movement.x == 0.f && movement.y == 0.f) return;
 
         const MapArray& map = dungeonRef->getMap();
-        if (canMoveTo(nextBounds, map, blockers)) {
+        sf::FloatRect currBounds = shape.getGlobalBounds();
+
+        // Try full move first
+        sf::FloatRect fullNext = currBounds;
+        fullNext.position += movement;
+        if (canMoveTo(fullNext, map, blockers)) {
             shape.move(movement);
+            return;
         }
+
+        // Axis-prioritized sliding: try larger component first
+        if (std::abs(movement.x) >= std::abs(movement.y)) {
+            sf::FloatRect nextX = currBounds; nextX.position.x += movement.x;
+            if (canMoveTo(nextX, map, blockers)) {
+                shape.move(sf::Vector2f{ movement.x, 0.f });
+                return;
+            }
+            sf::FloatRect nextY = currBounds; nextY.position.y += movement.y;
+            if (canMoveTo(nextY, map, blockers)) {
+                shape.move(sf::Vector2f{ 0.f, movement.y });
+                return;
+            }
+        }
+        else {
+            sf::FloatRect nextY = currBounds; nextY.position.y += movement.y;
+            if (canMoveTo(nextY, map, blockers)) {
+                shape.move(sf::Vector2f{ 0.f, movement.y });
+                return;
+            }
+            sf::FloatRect nextX = currBounds; nextX.position.x += movement.x;
+            if (canMoveTo(nextX, map, blockers)) {
+                shape.move(sf::Vector2f{ movement.x, 0.f });
+                return;
+            }
+        }
+
+        // blocked on both axes; stay put
 }
 
 bool Enemy::hasLineOfSightTo(const sf::Vector2f& target) const {

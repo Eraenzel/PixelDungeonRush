@@ -68,7 +68,7 @@ private:
     int enemiesKilledThisFloor = 0;
     int enemiesToClear = 0;
     int enemiesToClearThisFloor = 0;
-	int enemiesToSpawn = 5; 
+	int enemiesToSpawn = 6; 
 
     sf::Clock attackCooldown;
     bool canAttack() const;

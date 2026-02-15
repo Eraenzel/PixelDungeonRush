@@ -1,5 +1,6 @@
 #include "Player.hpp"
 #include <SFML/Window/Keyboard.hpp>
+#include <cmath>
 
 Player::Player(const Dungeon& dungeon) : dungeonRef(dungeon) {
     shape.setSize({TILE_SIZE - 2.f, TILE_SIZE - 2.f});
@@ -17,13 +18,57 @@ void Player::handleInput(const std::vector<Entity*>& blockers, float dt) {
 
 	movement *= dt;
 
-    sf::FloatRect nextBounds = Player::shape.getGlobalBounds();
-    nextBounds.position.x += movement.x;
-    nextBounds.position.y += movement.y;
+    if (movement.x == 0.f && movement.y == 0.f)
+        return;
 
-    if (canMoveTo(nextBounds, dungeonRef.getMap(), blockers)) {
+    const MapArray& map = dungeonRef.getMap();
+
+    // Attempt full movement first
+    sf::FloatRect currBounds = shape.getGlobalBounds();
+    sf::FloatRect fullNext = currBounds;
+    fullNext.position += movement;
+
+    if (canMoveTo(fullNext, map, blockers)) {
         shape.move(movement);
+        return;
     }
+
+    // If blocked, try sliding: attempt larger axis first for more natural feel
+    if (std::abs(movement.x) >= std::abs(movement.y)) {
+        // try X
+        sf::FloatRect nextX = currBounds;
+        nextX.position.x += movement.x;
+        if (canMoveTo(nextX, map, blockers)) {
+            shape.move(sf::Vector2f{ movement.x, 0.f });
+            return;
+        }
+        // try Y
+        sf::FloatRect nextY = currBounds;
+        nextY.position.y += movement.y;
+        if (canMoveTo(nextY, map, blockers)) {
+            shape.move(sf::Vector2f{ 0.f, movement.y });
+            return;
+        }
+    }
+    else {
+        // try Y first
+        sf::FloatRect nextY = currBounds;
+        nextY.position.y += movement.y;
+        if (canMoveTo(nextY, map, blockers)) {
+            shape.move(sf::Vector2f{ 0.f, movement.y });
+            return;
+        }
+        // try X
+        sf::FloatRect nextX = currBounds;
+        nextX.position.x += movement.x;
+        if (canMoveTo(nextX, map, blockers)) {
+            shape.move(sf::Vector2f{ movement.x, 0.f });
+            return;
+        }
+    }
+
+    // If all fail, don't move (still prevents tunneling because movement is clamped per frame)
+
 }
 
 void Player::avoidEnemies(const std::vector<Enemy>& enemies) {

@@ -78,7 +78,7 @@ void Game::restartGame()
 	attackCooldown.restart();
     ui.clearBossMarker();
     floorNumber = 1;
-	enemiesToSpawn = 5;
+	enemiesToSpawn = 6;
     startFloor();
 }
 
@@ -94,7 +94,7 @@ void Game::startFloor() {
     spawnEnemies();
 
     enemiesKilledThisFloor = 0;
-    enemiesToClear = static_cast<int>(enemiesToSpawn * 0.6f); // 60%
+    enemiesToClear = static_cast<int>(enemiesToSpawn * 0.4f); // 60%
 	enemiesToClearThisFloor = enemiesToClear;
 
     ui.markMinimapDirty();
