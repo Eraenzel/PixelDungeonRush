@@ -1,28 +1,27 @@
 #include "Enemy.hpp"
 #include <random>
 
-Enemy::Enemy(const sf::Vector2f& position, const Dungeon& dungeon) : dungeonRef(&dungeon) {
+Enemy::Enemy(const sf::Vector2f& position, const Dungeon& dungeon) : dungeonRef(dungeon) {
     shape.setFillColor(sf::Color::Red);
     shape.setPosition(position);
     speed = 100.f;
 }
 
 void Enemy::update(const sf::Vector2f& playerPos, const std::vector<Entity*>& blockers, float dt) {
-    
-    if (!dungeonRef) return;
-    if (attackState == AttackState::WindingUp)
-    {
+
+	if (attackState == AttackState::WindingUp)
+	{
 		shape.setFillColor(sf::Color(255, 120, 120));
-        return;
-    }
-    else shape.setFillColor(sf::Color::Red);
+		return;
+	}
+	else shape.setFillColor(sf::Color::Red);
 
-    if (isBoss() && attackState == AttackState::Idle) {
-        shape.setOutlineThickness(2.f);
-        shape.setOutlineColor(sf::Color::Magenta);
-    }
+	if (isBoss() && attackState == AttackState::Idle) {
+		shape.setOutlineThickness(2.f);
+		shape.setOutlineColor(sf::Color::Magenta);
+	}
 
-    
+
     sf::Vector2f direction = playerPos - shape.getPosition();
     float distance = std::sqrt(direction.x * direction.x + direction.y * direction.y);
 
@@ -33,7 +32,7 @@ void Enemy::update(const sf::Vector2f& playerPos, const std::vector<Entity*>& bl
 
         if (movement.x == 0.f && movement.y == 0.f) return;
 
-        const MapArray& map = dungeonRef->getMap();
+        const MapArray& map = dungeonRef.get().getMap();
         sf::FloatRect currBounds = shape.getGlobalBounds();
 
         // Try full move first
@@ -74,9 +73,7 @@ void Enemy::update(const sf::Vector2f& playerPos, const std::vector<Entity*>& bl
 }
 
 bool Enemy::hasLineOfSightTo(const sf::Vector2f& target) const {
-    if (!dungeonRef) return false;
-
-    const MapArray& map = dungeonRef->getMap();
+    const MapArray& map = dungeonRef.get().getMap();
 
     sf::Vector2i fromTile = sf::Vector2i(shape.getPosition() / TILE_SIZE);
     sf::Vector2i toTile = sf::Vector2i(target / TILE_SIZE);

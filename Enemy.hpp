@@ -42,6 +42,6 @@ public:
 
 
 private:
-    const Dungeon* dungeonRef = nullptr;
+    std::reference_wrapper<const Dungeon> dungeonRef;
 
 };

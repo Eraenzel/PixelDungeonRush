@@ -1,36 +1,69 @@
 #include "Game.hpp"
 #include "Entity.hpp"
+#include "Constants.hpp"
+#include "Config.hpp"
 #include <iostream>
 #include <fstream>
 
 Game::Game()
-    : window(sf::VideoMode({ 1280, 720 }), "Pixel Dungeon Rush"),
-    dungeon(),
-    player(dungeon),
-    ui(dungeon),
+	: window(sf::VideoMode({ 
+		static_cast<unsigned int>(Config::instance().getInt("graphics.windowWidth", 1280)),
+		static_cast<unsigned int>(Config::instance().getInt("graphics.windowHeight", 720))
+	  }), "Pixel Dungeon Rush"),
+	dungeon(),
+	player(dungeon),
+	ui(dungeon),
 	rng(std::mt19937(std::random_device{}())),
 	loot(rng)
 {
-    ui.regenerateMinimap();
-    window.setFramerateLimit(60);
-    restartGame();
+	// Load configuration from JSON
+	if (!Config::instance().loadFromFile("assets/config.json")) {
+		std::cerr << "Warning: Using default configuration values\n";
+	}
 
-    camera.setSize(sf::Vector2f{
-        static_cast<float>(window.getSize().x),
-        static_cast<float>(window.getSize().y) });
-    camera.zoom(0.4f);
+	ui.regenerateMinimap();
+	window.setFramerateLimit(Config::instance().getInt("graphics.targetFPS", 60));
+	restartGame();
 
-    fontLoaded = font.openFromFile("assets/Kenney Future.ttf");
-    if (!fontLoaded) {
-        std::cerr << "Failed to load font\n";
-    }
+	camera.setSize(sf::Vector2f{
+		static_cast<float>(window.getSize().x),
+		static_cast<float>(window.getSize().y) });
+	camera.zoom(Config::instance().getFloat("graphics.zoomLevel", 0.4f));
 
-    enemyDropTable = {
-    { Pickup::Type::Heal,        60.f, 20.f, 0.f },
-    { Pickup::Type::DamageBoost, 25.f, 0.3f, 6.f },
-    { Pickup::Type::SpeedBoost,  15.f, 0.25f, 6.f }
-    };
+	std::string fontPath = Config::instance().getString("graphics.fontPath", "assets/Kenney Future.ttf");
+	fontLoaded = font.openFromFile(fontPath);
+	if (!fontLoaded) {
+		std::cerr << "Warning: Failed to load font from '" << fontPath << "'\n"
+				  << "UI text will not render properly. Please ensure the font file exists.\n";
+	}
 
+	// Load loot drop table from config
+	if (auto dropsArray = Config::instance().getArray("gameplay.loot.drops")) {
+		enemyDropTable.clear();
+		for (const auto& drop : dropsArray.value()) {
+			std::string typeStr = drop["type"];
+			Pickup::Type type;
+			if (typeStr == "Heal") type = Pickup::Type::Heal;
+			else if (typeStr == "DamageBoost") type = Pickup::Type::DamageBoost;
+			else if (typeStr == "SpeedBoost") type = Pickup::Type::SpeedBoost;
+			else continue;
+
+			enemyDropTable.push_back({
+				type,
+				drop["chance"].get<float>(),
+				drop["value"].get<float>(),
+				drop["duration"].get<float>()
+			});
+		}
+	}
+	else {
+		// Fallback to defaults
+		enemyDropTable = {
+			{ Pickup::Type::Heal,        60.f, 20.f, 0.f },
+			{ Pickup::Type::DamageBoost, 25.f, 0.3f, 6.f },
+			{ Pickup::Type::SpeedBoost,  15.f, 0.25f, 6.f }
+		};
+	}
 }
 
 void Game::run() {
@@ -69,10 +102,9 @@ void Game::spawnEnemies()
 void Game::restartGame()
 {
 	//spawnBoss();
-    player.setHealth(100.f);
-    state = GameState::Playing;
+	player.setHealth(100.f);
+	state = GameState::Playing;
 	enemiesDefeated = 0;
-	bossAlive = true;
 	runEnded = false;
 	bossSpawned = false;
 	attackCooldown.restart();
@@ -188,7 +220,7 @@ void Game::update() {
 	int tileX = std::clamp(static_cast<int>(pos.x / TILE_SIZE), 0, MAP_WIDTH - 1);
     int tileY = std::clamp(static_cast<int>(pos.y / TILE_SIZE), 0, MAP_HEIGHT - 1);
 
-    dungeon.markVisible(tileX, tileY, VisionRadiusTiles);
+    dungeon.markVisible(tileX, tileY, Constants::Gameplay::VisionRadiusTiles);
     ui.markMinimapDirty();
 
     handleEnemyAttacks(blockers, dt);
@@ -199,7 +231,7 @@ void Game::update() {
         sf::Vector2f delta = pit->position - player.getCenter();
         float distSq = delta.x * delta.x + delta.y * delta.y;
 
-        if (distSq < pickupRadius) { // pickup radius
+        if (distSq < Constants::Gameplay::PickupRadius * Constants::Gameplay::PickupRadius) { // pickup radius
 
             switch (pit->type) {
             case Pickup::Type::Heal:
@@ -257,7 +289,7 @@ void Game::update() {
         ++it;
     }
 
-    if (bossSpawned && bossAlive) {
+    if (bossSpawned) {
         for (const auto& enemy : enemies) {
             if (enemy.isBoss()) {
                 ui.setBossMarker(enemy.getCenter());
@@ -297,7 +329,7 @@ void Game::render() {
         window.draw(pickup.shape);
     }
 
-    if (attackEffect && attackEffectTimer.getElapsedTime() < AttackEffectDuration) {
+    if (attackEffect && attackEffectTimer.getElapsedTime() < Constants::Gameplay::AttackEffectDuration) {
         window.draw(*attackEffect);
     }
     else {
@@ -322,7 +354,7 @@ void Game::render() {
         ui.drawDeathScreen(window, font);
     }
 
-    if (fontLoaded && !bossAlive) {
+    if (fontLoaded && state == GameState::Dead) {
         ui.clearBossMarker();
         //ui.drawWinScreen(window, font);
     }
@@ -356,7 +388,7 @@ void Game::handlePlayerAttack() {
         
         float distSq = dx * dx + dy * dy;
 
-        if (distSq <= AttackRadius * AttackRadius) {
+        if (distSq <= Constants::Gameplay::AttackRadius * Constants::Gameplay::AttackRadius) {
 			float Playerdamage = rollDamage(35.f, 45.f);
             if (player.damageBoost)
                 Playerdamage += player.damageBoost->value;
@@ -420,22 +452,15 @@ void Game::handlePlayerAttack() {
         }
     }
 
-    if (!bossSpawned && enemiesKilledThisFloor >= BossSpawnThreshold  && floorNumber % BossFloorInterval == 0) {
+    if (!bossSpawned && enemiesKilledThisFloor >= Constants::Gameplay::BossSpawnThreshold && floorNumber % Constants::Gameplay::BossFloorInterval == 0) {
         spawnBoss();
         bossSpawned = true;
-        bossAlive = true;
-    }
-
-    if (bossKilledThisFrame) {
-        //endRun();
-        bossAlive = false;
-        return;
     }
 
     attackCooldown.restart();
-    attackEffect.emplace(AttackRadius);
+    attackEffect.emplace(Constants::Gameplay::AttackRadius);
     attackEffect->setFillColor(sf::Color(0, 255, 0, 100));
-    attackEffect->setOrigin(sf::Vector2f{ AttackRadius, AttackRadius });
+    attackEffect->setOrigin(sf::Vector2f{ Constants::Gameplay::AttackRadius, Constants::Gameplay::AttackRadius });
     attackEffect->setPosition(player.getCenter());
     attackEffectTimer.restart();
 
@@ -504,7 +529,7 @@ void Game::handleEnemyAttacks(std::vector<Entity*>& blockers, float dt)
 }
 
 bool Game::canAttack() const {
-    return attackCooldown.getElapsedTime().asMilliseconds() > AttackCooldownMs; 
+    return attackCooldown.getElapsedTime().asMilliseconds() > Constants::Gameplay::AttackCooldownMs; 
 }
 
 void Game::spawnBoss()
@@ -544,8 +569,8 @@ void Game::spawnBoss()
         sf::Vector2f delta = tilePos - playerPos;
         float distSq = delta.x * delta.x + delta.y * delta.y;
 
-        if (distSq >= BossMinSpawnDist * BossMinSpawnDist &&
-            distSq <= BossMaxSpawnDist * BossMaxSpawnDist) {
+        if (distSq >= Constants::Gameplay::BossMinSpawnDist * Constants::Gameplay::BossMinSpawnDist &&
+            distSq <= Constants::Gameplay::BossMaxSpawnDist * Constants::Gameplay::BossMaxSpawnDist) {
             candidates.push_back(tilePos);
         }
     }
@@ -572,7 +597,6 @@ void Game::spawnBoss()
 
 void Game::endRun() {
     state = GameState::Dead;
-    bossAlive = false; // reuse Dead for now
     damageNumbers.clear();
     pickups.clear();
     attackEffect.reset();

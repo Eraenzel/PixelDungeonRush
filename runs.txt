@@ -8,3 +8,4 @@ Floor: 6 | Enemies: 53
 Floor: 2 | Enemies: 3
 Floor: 2 | Enemies: 5
 Floor: 7 | Enemies: 63
+Floor: 1 | Enemies: 1

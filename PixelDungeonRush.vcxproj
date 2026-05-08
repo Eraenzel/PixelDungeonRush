@@ -23,7 +23,7 @@
     <Keyword>Win32Proj</Keyword>
     <ProjectGuid>{85b65098-b947-4f2f-af47-57b9c425d901}</ProjectGuid>
     <RootNamespace>PixelDungeonRush</RootNamespace>
-    <WindowsTargetPlatformVersion>10.0.19041.0</WindowsTargetPlatformVersion>
+    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
@@ -129,6 +129,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Assets.cpp" />
+    <ClCompile Include="Config.cpp" />
     <ClCompile Include="Dungeon.cpp" />
     <ClCompile Include="Enemy.cpp" />
     <ClCompile Include="Entity.cpp" />
@@ -136,24 +137,41 @@
     <ClCompile Include="Loot.cpp" />
     <ClCompile Include="Main.cpp" />
     <ClCompile Include="Player.cpp" />
-    <ClCompile Include="Projectile.cpp" />
-    <ClCompile Include="Room.cpp" />
-    <ClCompile Include="SaveSystem.cpp" />
     <ClCompile Include="UI.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Assets.hpp" />
+    <ClInclude Include="Config.hpp" />
     <ClInclude Include="Dungeon.hpp" />
     <ClInclude Include="Enemy.hpp" />
     <ClInclude Include="Entity.hpp" />
     <ClInclude Include="Game.hpp" />
     <ClInclude Include="Loot.hpp" />
     <ClInclude Include="Player.hpp" />
-    <ClInclude Include="Projectile.hpp" />
-    <ClInclude Include="Room.hpp" />
     <ClInclude Include="UI.hpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include=".github\copilot-instructions.md" />
+    <None Include=".github\upgrades\CppBuildToolsUpgrade\agent.md" />
+    <None Include=".github\upgrades\CppBuildToolsUpgrade\scenario-instructions.md" />
+    <None Include="assets\config.json" />
+    <None Include="CODE_CHANGES_DETAILED.md" />
+    <None Include="COMPLETION_REPORT.md" />
+    <None Include="DOCUMENTATION_INDEX.md" />
+    <None Include="IMPROVEMENTS_SUMMARY.md" />
+    <None Include="packages.config" />
+    <None Include="QUICK_SUMMARY.md" />
+    <None Include="REFACTORING_ROADMAP.md" />
+    <None Include="REVIEW_EXECUTIVE_SUMMARY.md" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
+    <Import Project="packages\nlohmann.json.3.12.0\build\native\nlohmann.json.targets" Condition="Exists('packages\nlohmann.json.3.12.0\build\native\nlohmann.json.targets')" />
   </ImportGroup>
+  <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
+    <PropertyGroup>
+      <ErrorText>This project references NuGet package(s) that are missing on this computer. Use NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
+    </PropertyGroup>
+    <Error Condition="!Exists('packages\nlohmann.json.3.12.0\build\native\nlohmann.json.targets')" Text="$([System.String]::Format('$(ErrorText)', 'packages\nlohmann.json.3.12.0\build\native\nlohmann.json.targets'))" />
+  </Target>
 </Project>

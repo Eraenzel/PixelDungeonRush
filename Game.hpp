@@ -5,8 +5,9 @@
 #include "Enemy.hpp"
 #include "Dungeon.hpp"
 #include "UI.hpp"
-#include <random>
 #include "Loot.hpp"
+#include "Constants.hpp"
+#include <random>
 
 struct DamageNumber {
     sf::Text text;
@@ -52,50 +53,34 @@ private:
     bool fontLoaded = false;
     std::mt19937 rng;
 	sf::Clock frameClock;
-    std::vector<Pickup> pickups;
-    std::vector<DamageNumber> damageNumbers;
-    std::vector<DropEntry> enemyDropTable;
+	std::vector<Pickup> pickups;
+	std::vector<DamageNumber> damageNumbers;
+	std::vector<DropEntry> enemyDropTable;
 
-
-
-    Player player;
-    Dungeon dungeon;
-    UI ui;
+	Player player;
+	Dungeon dungeon;
+	UI ui;
 	LootSystem loot;
-	bool bossAlive = true;
-	int enemiesDefeated = 0;
-    int floorNumber = 1;
-    int enemiesKilledThisFloor = 0;
-    int enemiesToClear = 0;
-    int enemiesToClearThisFloor = 0;
-	int enemiesToSpawn = 6; 
 
-    sf::Clock attackCooldown;
-    bool canAttack() const;
-
-    std::optional<sf::CircleShape> attackEffect;
-    sf::Clock attackEffectTimer;
-
-    // Game constants
-    static constexpr float AttackRadius = 40.f;
-    static constexpr int EnemiesPerRoom = 10;
-    static constexpr float EnemyContactDPS = 30.f;
-    static constexpr int AttackCooldownMs = 500;
-	static constexpr int VisionRadiusTiles = 5;
-    sf::Time AttackEffectDuration = sf::milliseconds(100);
-	static constexpr float BossSpawnThreshold = 7; // enemies defeated before boss spawns
-	static constexpr int BossFloorInterval = 5; // spawn boss every X floors
+	// Game state
 	bool bossSpawned = false;
 	bool runEnded = false;
-    static constexpr float BossMinSpawnDist = 6.f * TILE_SIZE;
-    static constexpr float BossMaxSpawnDist = 12.f * TILE_SIZE;
-	static constexpr float PickupSpawnChance = 0.9f; // X% chance to drop a pickup
-	float pickupRadius = 1000.f; 
+	int enemiesDefeated = 0;
+	int floorNumber = 1;
+	int enemiesKilledThisFloor = 0;
+	int enemiesToClear = 0;
+	int enemiesToClearThisFloor = 0;
+	int enemiesToSpawn = Constants::Spawn::InitialEnemiesToSpawn;
 
+	sf::Clock attackCooldown;
+	bool canAttack() const;
 
-    //static constexpr sf::Time AttackCooldown = sf::milliseconds(500);
-    
-    void processEvents();
+	std::optional<sf::CircleShape> attackEffect;
+	sf::Clock attackEffectTimer;
+
+	// Game constants (moved to Constants.hpp)
+
+	void processEvents();
     void update();
     void render();
     void spawnEnemies();
